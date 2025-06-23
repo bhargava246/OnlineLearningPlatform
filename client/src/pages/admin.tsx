@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getGradeColor } from "@/lib/utils";
 import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen } from "lucide-react";
 import type { User, Course, TestResult } from "@shared/schema";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminTestResult extends TestResult {
   test?: {
@@ -33,6 +33,7 @@ export default function Admin() {
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("analytics");
 
   const { data: adminStats, isLoading: statsLoading } = useQuery<{
     totalUsers: number;
