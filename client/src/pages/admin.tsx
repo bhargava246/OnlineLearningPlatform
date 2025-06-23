@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import StatsCard from "@/components/stats-card";
 import CourseForm from "@/components/admin/course-form";
 import TestForm from "@/components/admin/test-form";
@@ -11,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getGradeColor } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
 import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen } from "lucide-react";
 import type { User, Course, TestResult } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +53,43 @@ export default function Admin() {
   const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/courses"],
   });
+
+  // Delete course mutation
+  const deleteCourse = useMutation({
+    mutationFn: async (courseId: string) => {
+      const response = await fetch(`/api/mongo/courses/${courseId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete course');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mongo/courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/stats"] });
+      toast({
+        title: "Success",
+        description: "Course deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete course",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditCourse = (course: any) => {
+    setEditingCourse(course);
+    setShowCourseForm(true);
+  };
+
+  const handleDeleteCourse = (courseId: string) => {
+    deleteCourse.mutate(courseId);
+  };
 
   if (statsLoading && activeTab === "analytics") {
     return (
@@ -260,9 +299,20 @@ export default function Admin() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <DialogTitle>{editingCourse ? 'Edit Course' : 'Create New Course'}</DialogTitle>
+                <DialogDescription>
+                  {editingCourse ? 'Update course information and content' : 'Fill in the details to create a new course'}
+                </DialogDescription>
                 <CourseForm 
-                  onSuccess={() => setShowCourseForm(false)}
-                  onCancel={() => setShowCourseForm(false)}
+                  course={editingCourse}
+                  onSuccess={() => {
+                    setShowCourseForm(false);
+                    setEditingCourse(null);
+                  }}
+                  onCancel={() => {
+                    setShowCourseForm(false);
+                    setEditingCourse(null);
+                  }}
                 />
               </DialogContent>
             </Dialog>
@@ -281,12 +331,42 @@ export default function Admin() {
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="text-lg font-semibold text-gray-900">{course.title}</h4>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="icon">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEditCourse(course)}
+                        title="Edit Course"
+                      >
                         <Edit className="h-4 w-4 text-gray-400" />
                       </Button>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-red-400" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            title="Delete Course"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-400" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{course.title}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteCourse(course._id || course.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                   <div className="space-y-2 text-sm text-gray-600">
