@@ -1,8 +1,8 @@
-import { useParams, Link } from "wouter";
+import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { X, Play, Clock, Youtube } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import VideoPlayer from "@/components/video-player";
 import PdfViewer from "@/components/pdf-viewer";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Course, CourseModule, CourseNote } from "@shared/schema";
@@ -85,50 +85,19 @@ export default function CourseDetail() {
               <div className="mb-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Video Lectures</h3>
                 {modules?.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {modules.map((module: any, index: number) => (
-                      <Link key={module._id || index} href={`/video/${courseId}/${module._id}`}>
-                        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4">
-                                <div className="flex-shrink-0">
-                                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                    <Play className="h-6 w-6 text-blue-600" />
-                                  </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="text-lg font-medium text-gray-900 truncate">
-                                    {index + 1}. {module.title}
-                                  </h4>
-                                  {module.description && (
-                                    <p className="text-sm text-gray-600 truncate mt-1">
-                                      {module.description}
-                                    </p>
-                                  )}
-                                  <div className="flex items-center mt-2 text-sm text-gray-500">
-                                    <Clock className="h-4 w-4 mr-1" />
-                                    <span>{module.duration} minutes</span>
-                                    <Youtube className="h-4 w-4 ml-4 mr-1" />
-                                    <span>Video Lecture</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex-shrink-0">
-                                <Button variant="outline" size="sm">
-                                  <Play className="h-4 w-4 mr-2" />
-                                  Watch
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
+                      <VideoPlayer
+                        key={module._id || index}
+                        title={module.title}
+                        duration={`${module.duration} min`}
+                        videoUrl={module.youtubeUrl}
+                      />
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-                    <Youtube className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <div className="text-4xl mb-4 opacity-50">📹</div>
                     <p>No video lectures available</p>
                   </div>
                 )}

@@ -15,13 +15,13 @@ export default function Footer() {
             <h4 className="font-semibold text-gray-900 mb-3">Platform</h4>
             <ul className="space-y-2 text-sm text-gray-600">
               <li>
-                <Link href="/courses" className="hover:text-primary">
-                  Courses
+                <Link href="/courses">
+                  <a className="hover:text-primary">Courses</a>
                 </Link>
               </li>
               <li>
-                <Link href="/test-results" className="hover:text-primary">
-                  Test Results
+                <Link href="/test-results">
+                  <a className="hover:text-primary">Test Results</a>
                 </Link>
               </li>
               <li>
