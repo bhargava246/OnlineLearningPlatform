@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -55,8 +55,20 @@ interface CourseFormProps {
 export default function CourseForm({ course, onSuccess, onCancel }: CourseFormProps) {
   const [modules, setModules] = useState<ModuleFormData[]>([]);
   const [notes, setNotes] = useState<NoteFormData[]>([]);
+  const [existingModules, setExistingModules] = useState<any[]>([]);
+  const [existingNotes, setExistingNotes] = useState<any[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load existing modules and notes when editing
+  useEffect(() => {
+    if (course && course.modules) {
+      setExistingModules(course.modules || []);
+    }
+    if (course && course.notes) {
+      setExistingNotes(course.notes || []);
+    }
+  }, [course]);
 
   const form = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
@@ -147,6 +159,14 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
     ]);
   };
 
+  const removeExistingModule = (moduleIndex: number) => {
+    setExistingModules(existingModules.filter((_, i) => i !== moduleIndex));
+  };
+
+  const removeExistingNote = (noteIndex: number) => {
+    setExistingNotes(existingNotes.filter((_, i) => i !== noteIndex));
+  };
+
   const removeNote = (index: number) => {
     setNotes(notes.filter((_, i) => i !== index));
   };
@@ -170,8 +190,12 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
       fileSize: note.fileSize || 'Unknown',
     }));
 
+    // Combine existing and new content
+    const allModules = [...existingModules, ...validatedModules];
+    const allNotes = [...existingNotes, ...validatedNotes];
+
     // Check if at least one module or note exists
-    if (validatedModules.length === 0 && validatedNotes.length === 0) {
+    if (allModules.length === 0 && allNotes.length === 0) {
       toast({
         title: "Error",
         description: "Please add at least one video module or PDF note",
@@ -206,8 +230,8 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
 
     const courseData = {
       ...data,
-      modules: validatedModules,
-      notes: validatedNotes,
+      modules: allModules,
+      notes: allNotes,
     };
 
     console.log("Submitting course data:", courseData);
@@ -357,12 +381,60 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
             </CardContent>
           </Card>
 
-          {/* Video Modules */}
+          {/* Existing Video Modules */}
+          {course && existingModules.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Youtube className="h-5 w-5" />
+                  Existing Video Lectures
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {existingModules.map((module, index) => (
+                  <div key={`existing-${index}`} className="border rounded-lg p-4 space-y-3 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium">Existing Module {index + 1}</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeExistingModule(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="text-sm">
+                        <span className="font-medium">Title:</span> {module.title}
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">Duration:</span> {module.duration} minutes
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">YouTube URL:</span> 
+                      <a href={module.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
+                        {module.youtubeUrl}
+                      </a>
+                    </div>
+                    {module.description && (
+                      <div className="text-sm">
+                        <span className="font-medium">Description:</span> {module.description}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* New Video Modules */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Youtube className="h-5 w-5" />
-                Video Lectures
+                {course ? "Add New Video Lectures" : "Video Lectures"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -415,12 +487,55 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
             </CardContent>
           </Card>
 
-          {/* PDF Notes */}
+          {/* Existing PDF Notes */}
+          {course && existingNotes.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Existing PDF Notes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {existingNotes.map((note, index) => (
+                  <div key={`existing-note-${index}`} className="border rounded-lg p-4 space-y-3 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium">Existing Note {index + 1}</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeExistingNote(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="text-sm">
+                        <span className="font-medium">Title:</span> {note.title}
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">File Size:</span> {note.fileSize || 'Unknown'}
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">PDF URL:</span> 
+                      <a href={note.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
+                        {note.pdfUrl}
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* New PDF Notes */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                PDF Notes
+                {course ? "Add New PDF Notes" : "PDF Notes"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
