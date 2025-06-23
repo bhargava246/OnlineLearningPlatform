@@ -9,7 +9,7 @@ export default function VideoPlayer() {
   const [match, params] = useRoute("/video/:courseId/:moduleId");
   
   const { data: course, isLoading } = useQuery<any>({
-    queryKey: ["/api/mongo/courses", params?.courseId],
+    queryKey: [`/api/mongo/courses/${params?.courseId}`],
     enabled: !!params?.courseId,
   });
 
@@ -58,7 +58,7 @@ export default function VideoPlayer() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900">Module Not Found</h2>
           <p className="text-gray-600 mt-2">The requested video module could not be found.</p>
-          <Link href={`/course/${params.courseId}`}>
+          <Link href={`/courses/${params.courseId}`}>
             <Button className="mt-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Course
@@ -83,7 +83,7 @@ export default function VideoPlayer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation */}
         <div className="mb-6">
-          <Link href={`/course/${params.courseId}`}>
+          <Link href={`/courses/${params.courseId}`}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Course
