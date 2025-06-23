@@ -47,11 +47,12 @@ type ModuleFormData = z.infer<typeof moduleSchema>;
 type NoteFormData = z.infer<typeof noteSchema>;
 
 interface CourseFormProps {
+  course?: any;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
+export default function CourseForm({ course, onSuccess, onCancel }: CourseFormProps) {
   const [modules, setModules] = useState<ModuleFormData[]>([]);
   const [notes, setNotes] = useState<NoteFormData[]>([]);
   const { toast } = useToast();
@@ -59,7 +60,14 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
 
   const form = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
-    defaultValues: {
+    defaultValues: course ? {
+      title: course.title || "",
+      description: course.description || "",
+      category: course.category || "",
+      thumbnail: course.thumbnail || "",
+      level: course.level || "Beginner",
+      price: course.price || 0,
+    } : {
       title: "",
       description: "",
       category: "",
@@ -71,16 +79,18 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
 
   const createCourseMutation = useMutation({
     mutationFn: async (data: CourseFormData & { modules: ModuleFormData[]; notes: NoteFormData[] }) => {
-      console.log("Sending course data:", data);
-      const response = await fetch("/api/mongo/courses", {
-        method: "POST",
+      const url = course ? `/api/mongo/courses/${course._id || course.id}` : '/api/mongo/courses';
+      const method = course ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Course creation failed:", errorText);
-        throw new Error(`Failed to create course: ${errorText}`);
+        console.error("Course operation failed:", errorText);
+        throw new Error(`Failed to ${course ? 'update' : 'create'} course: ${errorText}`);
       }
       return response.json();
     },
@@ -88,7 +98,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/mongo/courses"] });
       toast({
         title: "Success",
-        description: "Course created successfully",
+        description: `Course ${course ? 'updated' : 'created'} successfully`,
       });
       form.reset();
       setModules([]);
@@ -98,7 +108,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create course",
+        description: `Failed to ${course ? 'update' : 'create'} course`,
         variant: "destructive",
       });
     },
@@ -199,7 +209,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
       modules: validatedModules,
       notes: validatedNotes,
     };
-    
+
     console.log("Submitting course data:", courseData);
     createCourseMutation.mutate(courseData);
   };
@@ -207,7 +217,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Create New Course</h2>
+        <h2 className="text-2xl font-bold">{course ? "Edit Course" : "Create New Course"}</h2>
         <div className="space-x-2">
           <Button variant="outline" onClick={onCancel}>
             Cancel
@@ -216,7 +226,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
             onClick={form.handleSubmit(onSubmit)}
             disabled={createCourseMutation.isPending}
           >
-            {createCourseMutation.isPending ? "Creating..." : "Create Course"}
+            {createCourseMutation.isPending ? (course ? "Updating..." : "Creating...") : (course ? "Update Course" : "Create Course")}
           </Button>
         </div>
       </div>
@@ -368,7 +378,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Input
                       placeholder="Module title"
@@ -382,13 +392,13 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
                       onChange={(e) => updateModule(index, "duration", Number(e.target.value))}
                     />
                   </div>
-                  
+
                   <Input
                     placeholder="YouTube URL (e.g., https://youtube.com/watch?v=...)"
                     value={module.youtubeUrl}
                     onChange={(e) => updateModule(index, "youtubeUrl", e.target.value)}
                   />
-                  
+
                   <Textarea
                     placeholder="Module description (optional)"
                     value={module.description}
@@ -397,7 +407,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
                   />
                 </div>
               ))}
-              
+
               <Button type="button" variant="outline" onClick={addModule}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Video Module
@@ -426,7 +436,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Input
                       placeholder="Note title"
@@ -439,7 +449,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
                       onChange={(e) => updateNote(index, "fileSize", e.target.value)}
                     />
                   </div>
-                  
+
                   <Input
                     placeholder="PDF URL (e.g., https://example.com/document.pdf)"
                     value={note.pdfUrl}
@@ -447,7 +457,7 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
                   />
                 </div>
               ))}
-              
+
               <Button type="button" variant="outline" onClick={addNote}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add PDF Note

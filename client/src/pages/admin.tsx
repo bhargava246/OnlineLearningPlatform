@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getGradeColor } from "@/lib/utils";
 import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen } from "lucide-react";
 import type { User, Course, TestResult } from "@shared/schema";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AdminTestResult extends TestResult {
   test?: {
@@ -27,9 +28,11 @@ interface AdminTestResult extends TestResult {
 }
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState("analytics");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<any>(null);
 
   const { data: adminStats, isLoading: statsLoading } = useQuery<{
     totalUsers: number;
