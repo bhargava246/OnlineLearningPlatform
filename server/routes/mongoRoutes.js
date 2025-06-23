@@ -26,7 +26,75 @@ const filterStudentData = (req, res, next) => {
   next();
 };
 
-// Auth routes
+// JWT token verification middleware
+const verifyToken = async (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied. No token provided.' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid token. User not found.' });
+    }
+    
+    req.user = { ...decoded, dbUser: user };
+    next();
+  } catch (error) {
+    res.status(400).json({ message: 'Invalid token.' });
+  }
+};
+
+// Email/Password registration
+router.post('/auth/register', async (req, res) => {
+  try {
+    const { username, email, password, firstName, lastName } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { username }] 
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ 
+        message: 'User already exists with this email or username' 
+      });
+    }
+    
+    // Create new user (not approved by default)
+    const user = new User({
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      role: 'student',
+      isApproved: false // Requires admin approval
+    });
+    
+    await user.save();
+    
+    res.status(201).json({ 
+      message: 'Registration successful! Your account is pending approval.',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isApproved: user.isApproved
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Registration failed', error: error.message });
+  }
+});
+
+// Email/Password login
 router.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -50,12 +118,34 @@ router.post('/auth/login', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        avatar: user.avatar
+        avatar: user.avatar,
+        isApproved: user.isApproved,
+        approvedCourses: user.approvedCourses || []
       },
       token
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get current user (JWT authentication)
+router.get('/auth/user', verifyToken, async (req, res) => {
+  try {
+    const user = req.user.dbUser;
+    res.json({
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      avatar: user.avatar,
+      isApproved: user.isApproved,
+      approvedCourses: user.approvedCourses || []
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch user', error: error.message });
   }
 });
 
@@ -578,6 +668,64 @@ router.get('/admin/student-results', requireAdmin, async (req, res) => {
     res.json(studentResults);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch student results', error: error.message });
+  }
+});
+
+// Admin: Get pending user approvals
+router.get('/admin/pending-approvals', requireAdmin, async (req, res) => {
+  try {
+    const pendingUsers = await User.find({ 
+      isApproved: false,
+      role: 'student'
+    }).select('-password');
+    
+    res.json(pendingUsers);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch pending approvals', error: error.message });
+  }
+});
+
+// Admin: Approve user and assign courses
+router.post('/admin/approve-user/:userId', requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { courseIds } = req.body;
+    const adminId = req.user?.dbUser?._id;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        isApproved: true,
+        approvedBy: adminId,
+        approvedAt: new Date(),
+        approvedCourses: courseIds || []
+      },
+      { new: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ 
+      message: 'User approved successfully',
+      user 
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Failed to approve user', error: error.message });
+  }
+});
+
+// Admin: Reject user
+router.post('/admin/reject-user/:userId', requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    await User.findByIdAndDelete(userId);
+    
+    res.json({ message: 'User rejected and removed' });
+  } catch (error) {
+    res.status(400).json({ message: 'Failed to reject user', error: error.message });
   }
 });
 

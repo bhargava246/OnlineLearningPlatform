@@ -13,6 +13,7 @@ import TestResults from "@/pages/test-results";
 import Admin from "@/pages/admin";
 import VideoPlayer from "@/pages/video-player";
 import Landing from "@/pages/landing";
+import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,24 +30,61 @@ function Router() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Landing />;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/courses" component={Courses} />
-        <Route path="/courses/:id" component={CourseDetail} />
-        <Route path="/video/:courseId/:moduleId" component={VideoPlayer} />
-        <Route path="/test-results" component={TestResults} />
-        {isAdmin && <Route path="/admin" component={Admin} />}
-        <Route component={NotFound} />
-      </Switch>
-      <Footer />
-    </div>
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      {!isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          <Route path="/">
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <Dashboard />
+              <Footer />
+            </div>
+          </Route>
+          <Route path="/courses">
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <Courses />
+              <Footer />
+            </div>
+          </Route>
+          <Route path="/courses/:id">
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <CourseDetail />
+              <Footer />
+            </div>
+          </Route>
+          <Route path="/video/:courseId/:moduleId">
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <VideoPlayer />
+              <Footer />
+            </div>
+          </Route>
+          <Route path="/test-results">
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <TestResults />
+              <Footer />
+            </div>
+          </Route>
+          {isAdmin && (
+            <Route path="/admin">
+              <div className="min-h-screen bg-gray-50">
+                <Header />
+                <Admin />
+                <Footer />
+              </div>
+            </Route>
+          )}
+        </>
+      )}
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 

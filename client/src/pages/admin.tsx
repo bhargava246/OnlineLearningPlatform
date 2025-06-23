@@ -8,6 +8,7 @@ import StatsCard from "@/components/stats-card";
 import CourseForm from "@/components/admin/course-form";
 import TestForm from "@/components/admin/test-form";
 import StudentGrades from "@/components/admin/student-grades";
+import UserApprovals from "@/components/admin/user-approvals";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -121,8 +122,9 @@ export default function Admin() {
 
       {/* Admin Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="approvals">User Approvals</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="courses">Course Management</TabsTrigger>
           <TabsTrigger value="tests">Test Management</TabsTrigger>
@@ -207,6 +209,11 @@ export default function Admin() {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        {/* User Approvals Tab */}
+        <TabsContent value="approvals" className="space-y-6">
+          <UserApprovals />
         </TabsContent>
 
         {/* User Management Tab */}

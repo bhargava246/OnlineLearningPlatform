@@ -28,7 +28,15 @@ export default function Header() {
   };
 
   const handleLogout = () => {
-    window.location.href = '/api/logout';
+    const token = localStorage.getItem("token");
+    if (token) {
+      // Email/password logout
+      localStorage.removeItem("token");
+      window.location.href = '/auth';
+    } else {
+      // Replit logout
+      window.location.href = '/api/logout';
+    }
   };
 
   return (

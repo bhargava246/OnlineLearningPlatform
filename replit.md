@@ -42,9 +42,11 @@ The application uses a comprehensive database schema with the following main ent
 - **Recent Activities**: User activity logging for dashboard insights
 
 ### Authentication & Authorization
-- Simple username/password authentication
+- **Primary**: Email/password authentication with JWT tokens stored in localStorage
+- **Secondary**: Replit OpenID Connect authentication as fallback option
 - Role-based access control (student, instructor, admin)
-- Session-based authentication (no JWT implementation visible)
+- **User Approval Workflow**: New students require admin approval before accessing courses
+- Session-based authentication for Replit auth, JWT for email/password auth
 
 ### User Interface Components
 - **Dashboard**: Personalized learning overview with statistics
@@ -123,12 +125,29 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 23, 2025**: Email/Password Authentication & User Approval Workflow Complete
+  - **NEW: Dual Authentication System**
+    - Primary: Email/password authentication with JWT tokens (default registration creates student accounts)
+    - Secondary: Replit OpenID Connect authentication as fallback option
+    - Admin accounts must be added directly via MongoDB, students register through UI
+  - **NEW: User Approval Workflow**
+    - New student registrations require admin approval before course access
+    - Admin interface for reviewing and approving/rejecting pending users
+    - Course-specific access control where admins assign approved courses to students
+    - Real-time approval status banners for students showing pending/approved state
+    - Automatic redirect to authentication page for unauthenticated users
+  - **Authentication Features**
+    - Beautiful two-column authentication page with login/register tabs
+    - JWT token storage in localStorage with automatic logout on token expiry
+    - Comprehensive error handling and user feedback during auth process
+    - Header logout functionality supporting both authentication methods
+
 - **June 23, 2025**: MongoDB Integration & Test Management System Complete
   - Successfully connected to user's MongoDB database (mongodb+srv://Himanshu:Himanshu123@himanshu.pe7xrly.mongodb.net/LMS)
   - Implemented course creation with YouTube videos and PDF notes
   - Course data uploads successfully to MongoDB with embedded modules and notes structure
   - Course detail pages load embedded YouTube videos and downloadable PDF links
-  - **NEW: Complete Test Management System**
+  - **Complete Test Management System**
     - Admin can create tests for courses with validation
     - Comprehensive student grading interface where admins assign scores and grades
     - Students can view their test results and grades assigned by admin

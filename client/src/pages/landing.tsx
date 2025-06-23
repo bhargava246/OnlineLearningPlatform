@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GraduationCap, BookOpen, Award, Users } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-16">
@@ -18,7 +21,7 @@ export default function Landing() {
           <Button 
             size="lg" 
             className="px-8 py-4 text-lg"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => setLocation('/auth')}
           >
             <GraduationCap className="mr-2 h-5 w-5" />
             Get Started - Sign In
