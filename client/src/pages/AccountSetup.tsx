@@ -88,11 +88,11 @@ export default function AccountSetup() {
       if (response.ok) {
         // Store JWT token
         localStorage.setItem('authToken', data.token);
-        setSuccess('Account setup completed successfully! Redirecting to dashboard...');
+        setSuccess('Account setup completed successfully! Redirecting to your courses...');
         
-        // Redirect to dashboard after a short delay
+        // Redirect to courses page after a short delay
         setTimeout(() => {
-          setLocation('/');
+          setLocation('/courses');
         }, 1500);
       } else {
         setError(data.message || 'Setup failed. Please try again.');
