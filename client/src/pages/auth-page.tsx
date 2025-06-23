@@ -80,7 +80,7 @@ export default function AuthPage() {
           title: "Login successful",
           description: "Welcome back!",
         });
-        setLocation("/mycourses");
+        setLocation("/");
       } else {
         toast({
           title: "Login failed",

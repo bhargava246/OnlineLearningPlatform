@@ -141,8 +141,8 @@ export async function setupAuth(app: Express) {
             } else {
               // Store user in session
               req.user.dbUser = existingUser;
-              // Existing user - redirect to mycourses
-              return res.redirect("/mycourses");
+              // Existing user - redirect to main dashboard
+              return res.redirect("/");
             }
           } catch (error) {
             console.error("Error checking setup status:", error);
