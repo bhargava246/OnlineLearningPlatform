@@ -10,8 +10,12 @@ import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import MemoryStore from "memorystore";
 
+// Set default REPLIT_DOMAINS if not provided
 if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+  // For local development, use localhost
+  const hostname = 'localhost:5000';
+  process.env.REPLIT_DOMAINS = hostname;
+  console.log(`Using default REPLIT_DOMAINS for local development: ${hostname}`);
 }
 
 const getOidcConfig = memoize(
