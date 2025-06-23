@@ -5,11 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import StatsCard from "@/components/stats-card";
 import CourseForm from "@/components/admin/course-form";
+import TestForm from "@/components/admin/test-form";
+import StudentGrades from "@/components/admin/student-grades";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getGradeColor } from "@/lib/utils";
-import { Plus, Youtube, FileText, Edit, Trash2 } from "lucide-react";
+import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen } from "lucide-react";
 import type { User, Course, TestResult } from "@shared/schema";
 
 interface AdminTestResult extends TestResult {
@@ -27,6 +29,7 @@ interface AdminTestResult extends TestResult {
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("analytics");
   const [showCourseForm, setShowCourseForm] = useState(false);
+  const [showTestForm, setShowTestForm] = useState(false);
 
   const { data: adminStats, isLoading: statsLoading } = useQuery<{
     totalUsers: number;
@@ -71,11 +74,12 @@ export default function Admin() {
 
       {/* Admin Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="courses">Course Management</TabsTrigger>
           <TabsTrigger value="tests">Test Management</TabsTrigger>
+          <TabsTrigger value="grades">Student Grades</TabsTrigger>
         </TabsList>
 
         {/* Analytics Tab */}
@@ -319,80 +323,42 @@ export default function Admin() {
         <TabsContent value="tests" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold text-gray-900">Test Management</h3>
-            <Button>
-              <i className="fas fa-plus mr-2"></i>
-              Create Test
-            </Button>
+            <Dialog open={showTestForm} onOpenChange={setShowTestForm}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Test
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <TestForm 
+                  onSuccess={() => setShowTestForm(false)}
+                  onCancel={() => setShowTestForm(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Test Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Course
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      JavaScript Quiz
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      Web Development
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant="default">Active</Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Button variant="ghost" size="sm" className="mr-3">
-                        Edit
-                      </Button>
-                      <Button variant="ghost" size="sm" className="mr-3">
-                        Results
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600">
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      Data Structures Final
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      Data Science
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant="secondary">Draft</Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Button variant="ghost" size="sm" className="mr-3">
-                        Edit
-                      </Button>
-                      <Button variant="ghost" size="sm" className="mr-3">
-                        Results
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600">
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          {/* Test List */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="text-center py-8 text-gray-500">
+              <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Test Creation</h3>
+              <p className="text-gray-500 mb-4">Create tests for your courses to assess student learning</p>
+              <Button 
+                variant="outline"
+                onClick={() => setShowTestForm(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Test
+              </Button>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Student Grades Tab */}
+        <TabsContent value="grades" className="space-y-6">
+          <StudentGrades />
         </TabsContent>
       </Tabs>
     </main>

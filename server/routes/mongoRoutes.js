@@ -367,18 +367,210 @@ router.get('/users/:id/stats', async (req, res) => {
   }
 });
 
-// Admin stats
+// Test management routes
+router.get('/tests', async (req, res) => {
+  try {
+    const { courseId } = req.query;
+    let query = { isActive: true };
+    
+    if (courseId) {
+      query.course = courseId;
+    }
+    
+    const tests = await Test.find(query)
+      .populate('course', 'title category')
+      .select('-questions.correctAnswer -results.answers');
+    
+    res.json(tests);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch tests', error: error.message });
+  }
+});
+
+router.get('/tests/:id', async (req, res) => {
+  try {
+    const test = await Test.findById(req.params.id)
+      .populate('course', 'title category')
+      .populate('results.student', 'firstName lastName email');
+    
+    if (!test) {
+      return res.status(404).json({ message: 'Test not found' });
+    }
+    
+    res.json(test);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch test', error: error.message });
+  }
+});
+
+// Admin: Create test
+router.post('/tests', async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      courseId,
+      questions,
+      timeLimit,
+      passingScore,
+      attempts
+    } = req.body;
+
+    const test = new Test({
+      title,
+      description,
+      course: courseId,
+      questions: questions || [],
+      timeLimit: timeLimit || 60,
+      passingScore: passingScore || 60,
+      attempts: attempts || 3
+    });
+
+    await test.save();
+    await test.populate('course', 'title category');
+    
+    res.status(201).json(test);
+  } catch (error) {
+    res.status(400).json({ message: 'Failed to create test', error: error.message });
+  }
+});
+
+// Admin: Add/Update test result for a student
+router.post('/tests/:testId/results', async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const { studentId, score, grade, answers, timeSpent } = req.body;
+
+    const test = await Test.findById(testId);
+    if (!test) {
+      return res.status(404).json({ message: 'Test not found' });
+    }
+
+    // Check if student already has a result for this test
+    const existingResultIndex = test.results.findIndex(
+      result => result.student.toString() === studentId
+    );
+
+    const resultData = {
+      student: studentId,
+      score: Number(score),
+      maxScore: test.maxScore,
+      grade,
+      answers: answers || [],
+      timeSpent: timeSpent || 0,
+      completedAt: new Date()
+    };
+
+    if (existingResultIndex !== -1) {
+      // Update existing result
+      test.results[existingResultIndex] = resultData;
+    } else {
+      // Add new result
+      test.results.push(resultData);
+    }
+
+    await test.save();
+    await test.populate('results.student', 'firstName lastName email');
+    
+    res.json(test);
+  } catch (error) {
+    res.status(400).json({ message: 'Failed to add test result', error: error.message });
+  }
+});
+
+// Get test results for a specific student
+router.get('/students/:studentId/test-results', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    
+    const tests = await Test.find({ 
+      'results.student': studentId,
+      isActive: true 
+    })
+      .populate('course', 'title category')
+      .select('title course results');
+    
+    const studentResults = tests.map(test => {
+      const studentResult = test.results.find(
+        result => result.student.toString() === studentId
+      );
+      
+      return {
+        testId: test._id,
+        testTitle: test.title,
+        course: test.course,
+        result: studentResult
+      };
+    });
+    
+    res.json(studentResults);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch student test results', error: error.message });
+  }
+});
+
+// Get all students with their test results for admin
+router.get('/admin/student-results', async (req, res) => {
+  try {
+    const students = await User.find({ role: 'student', isActive: true })
+      .select('firstName lastName email');
+    
+    const tests = await Test.find({ isActive: true })
+      .populate('course', 'title category')
+      .select('title course results maxScore');
+    
+    const studentResults = students.map(student => {
+      const testResults = tests.map(test => {
+        const result = test.results.find(
+          r => r.student.toString() === student._id.toString()
+        );
+        
+        return {
+          testId: test._id,
+          testTitle: test.title,
+          course: test.course,
+          maxScore: test.maxScore,
+          result: result || null
+        };
+      });
+      
+      return {
+        student,
+        testResults
+      };
+    });
+    
+    res.json(studentResults);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch student results', error: error.message });
+  }
+});
+
+// Admin stats (updated with real test data)
 router.get('/admin/stats', async (req, res) => {
   try {
     const totalUsers = await User.countDocuments({ isActive: true });
     const activeCourses = await Course.countDocuments({ isActive: true });
-    const testsCompleted = 0; // Placeholder - implement when tests are added
-    const averageScore = 85; // Placeholder
+    const activeTests = await Test.countDocuments({ isActive: true });
+    
+    // Calculate total test results and average score
+    const tests = await Test.find({ isActive: true });
+    let totalResults = 0;
+    let totalScore = 0;
+    
+    tests.forEach(test => {
+      test.results.forEach(result => {
+        totalResults++;
+        totalScore += (result.score / result.maxScore) * 100;
+      });
+    });
+    
+    const averageScore = totalResults > 0 ? Math.round(totalScore / totalResults) : 0;
     
     res.json({
       totalUsers,
       activeCourses,
-      testsCompleted,
+      testsCompleted: totalResults,
       averageScore
     });
   } catch (error) {

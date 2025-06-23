@@ -26,8 +26,8 @@ export default function TestResults() {
   // Mock user ID - in real app this would come from auth context
   const userId = 2;
 
-  const { data: testResults, isLoading } = useQuery<TestResultWithDetails[]>({
-    queryKey: [`/api/users/${userId}/test-results`],
+  const { data: testResults, isLoading } = useQuery<any[]>({
+    queryKey: [`/api/mongo/students/${userId}/test-results`],
   });
 
   const filteredResults = testResults?.filter((result) => {
