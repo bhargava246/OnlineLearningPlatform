@@ -441,9 +441,20 @@ router.post('/tests/:testId/results', async (req, res) => {
     const { testId } = req.params;
     const { studentId, score, grade, answers, timeSpent } = req.body;
 
+    // Validate required fields
+    if (!studentId || score === undefined || !grade) {
+      return res.status(400).json({ message: 'Missing required fields: studentId, score, and grade are required' });
+    }
+
     const test = await Test.findById(testId);
     if (!test) {
       return res.status(404).json({ message: 'Test not found' });
+    }
+
+    // Verify student exists
+    const student = await User.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
     }
 
     // Check if student already has a result for this test
@@ -454,16 +465,16 @@ router.post('/tests/:testId/results', async (req, res) => {
     const resultData = {
       student: studentId,
       score: Number(score),
-      maxScore: test.maxScore,
+      maxScore: test.maxScore || 100,
       grade,
       answers: answers || [],
-      timeSpent: timeSpent || 0,
+      timeSpent: Number(timeSpent) || 0,
       completedAt: new Date()
     };
 
     if (existingResultIndex !== -1) {
       // Update existing result
-      test.results[existingResultIndex] = resultData;
+      test.results[existingResultIndex] = { ...test.results[existingResultIndex].toObject(), ...resultData };
     } else {
       // Add new result
       test.results.push(resultData);
@@ -472,8 +483,9 @@ router.post('/tests/:testId/results', async (req, res) => {
     await test.save();
     await test.populate('results.student', 'firstName lastName email');
     
-    res.json(test);
+    res.json({ message: 'Grade saved successfully', test });
   } catch (error) {
+    console.error('Error saving test result:', error);
     res.status(400).json({ message: 'Failed to add test result', error: error.message });
   }
 });
