@@ -25,11 +25,16 @@ interface TestResultWithDetails extends TestResult {
 export default function TestResults() {
   const [selectedCourse, setSelectedCourse] = useState("all");
   
-  // Mock user ID - in real app this would come from auth context
-  const userId = 2;
+  // Get student data by username (you can replace 'student1' with actual logged-in user)
+  const { data: studentData } = useQuery({
+    queryKey: ['/api/mongo/students/by-username/student1'],
+  });
+
+  const userId = studentData?._id;
 
   const { data: testResults, isLoading } = useQuery<any[]>({
     queryKey: [`/api/mongo/students/${userId}/test-results`],
+    enabled: !!userId,
   });
 
   const filteredResults = testResults?.filter((result) => {
@@ -121,7 +126,7 @@ export default function TestResults() {
               <div className="space-y-4">
                 {testGroup.results.map((result: any, index: number) => {
                   const isLatest = index === testGroup.results.length - 1;
-                  const percentage = result.result ? Math.round((result.result.score / (result.result.maxScore || 100)) * 100) : 0;
+                  const percentage = result.result ? Math.round((result.result.score / (result.maxScore || 100)) * 100) : 0;
                   
                   return (
                     <div key={`${result.testId}-${index}`} className={`p-4 rounded-lg border ${isLatest ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
@@ -138,7 +143,7 @@ export default function TestResults() {
                             <div className="flex items-center space-x-4">
                               <div className="text-sm">
                                 <span className="font-medium">{result.result.score}</span>
-                                <span className="text-gray-500">/{result.result.maxScore || 100}</span>
+                                <span className="text-gray-500">/{result.maxScore || 100}</span>
                                 <span className="text-gray-500 ml-1">({percentage}%)</span>
                               </div>
                               <Badge className={getGradeColor(result.result.grade)}>

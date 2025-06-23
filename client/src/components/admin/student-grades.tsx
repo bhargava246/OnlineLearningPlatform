@@ -44,7 +44,8 @@ function GradeForm({ student, test, existingResult, onSuccess }: GradeFormProps)
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/student-results"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mongo/users"] });
       toast({
         title: "Success",
         description: `Grade ${existingResult ? 'updated' : 'added'} for ${student.firstName} ${student.lastName}`,

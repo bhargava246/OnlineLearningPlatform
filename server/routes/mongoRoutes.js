@@ -490,34 +490,21 @@ router.post('/tests/:testId/results', async (req, res) => {
   }
 });
 
-// Get test results for a specific student
-router.get('/students/:studentId/test-results', async (req, res) => {
+
+
+// Get student ID by username (for finding current user)
+router.get('/students/by-username/:username', async (req, res) => {
   try {
-    const { studentId } = req.params;
+    const { username } = req.params;
+    const student = await User.findOne({ username, role: 'student' }, '_id firstName lastName email username');
     
-    const tests = await Test.find({ 
-      'results.student': studentId,
-      isActive: true 
-    })
-      .populate('course', 'title category')
-      .select('title course results');
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
     
-    const studentResults = tests.map(test => {
-      const studentResult = test.results.find(
-        result => result.student.toString() === studentId
-      );
-      
-      return {
-        testId: test._id,
-        testTitle: test.title,
-        course: test.course,
-        result: studentResult
-      };
-    });
-    
-    res.json(studentResults);
+    res.json(student);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch student test results', error: error.message });
+    res.status(500).json({ message: 'Failed to fetch student', error: error.message });
   }
 });
 
@@ -595,25 +582,27 @@ router.get('/students/:studentId/test-results', async (req, res) => {
   try {
     const { studentId } = req.params;
     
-    const tests = await Test.find({})
+    const tests = await Test.find({ isActive: true })
       .populate('course', 'title category')
-      .lean();
+      .populate('results.student', 'firstName lastName email');
     
     const studentResults = tests.map(test => {
       const studentResult = test.results?.find(result => 
-        result.student.toString() === studentId
+        result.student._id.toString() === studentId
       );
       
       return {
         testId: test._id,
         testTitle: test.title,
         course: test.course,
+        maxScore: test.maxScore || 100,
         result: studentResult || null
       };
     });
     
     res.json(studentResults);
   } catch (error) {
+    console.error('Error fetching student test results:', error);
     res.status(500).json({ message: 'Failed to fetch student test results', error: error.message });
   }
 });
