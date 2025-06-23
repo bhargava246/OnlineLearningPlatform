@@ -40,11 +40,11 @@ export default function Admin() {
     queryKey: ["/api/mongo/admin/stats"],
   });
 
-  const { data: users, isLoading: usersLoading } = useQuery<User[]>({
+  const { data: users, isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/users"],
   });
 
-  const { data: courses, isLoading: coursesLoading } = useQuery<Course[]>({
+  const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/courses"],
   });
 
@@ -200,7 +200,7 @@ export default function Admin() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {users?.map((user) => (
-                      <tr key={user.id}>
+                      <tr key={user._id || user.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <Avatar className="h-10 w-10">

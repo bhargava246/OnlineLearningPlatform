@@ -134,7 +134,7 @@ function GradeForm({ student, test, existingResult, onSuccess }: GradeFormProps)
 }
 
 export default function StudentGrades() {
-  const [selectedTest, setSelectedTest] = useState<string>("");
+  const [selectedTest, setSelectedTest] = useState<string>("all");
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedTestData, setSelectedTestData] = useState<any>(null);
@@ -182,7 +182,7 @@ export default function StudentGrades() {
     );
   }
 
-  const filteredResults = selectedTest 
+  const filteredResults = selectedTest && selectedTest !== "all"
     ? studentResults?.map(sr => ({
         ...sr,
         testResults: sr.testResults.filter((tr: any) => tr.testId === selectedTest)
@@ -219,7 +219,7 @@ export default function StudentGrades() {
                 <SelectValue placeholder="All Tests" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Tests</SelectItem>
+                <SelectItem value="all">All Tests</SelectItem>
                 {tests?.map((test) => (
                   <SelectItem key={test._id} value={test._id}>
                     {test.title} ({test.course?.title})

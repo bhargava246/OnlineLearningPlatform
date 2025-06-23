@@ -578,4 +578,32 @@ router.get('/admin/stats', async (req, res) => {
   }
 });
 
+// Student: Get test results for a specific student
+router.get('/students/:studentId/test-results', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    
+    const tests = await Test.find({})
+      .populate('course', 'title category')
+      .lean();
+    
+    const studentResults = tests.map(test => {
+      const studentResult = test.results?.find(result => 
+        result.student.toString() === studentId
+      );
+      
+      return {
+        testId: test._id,
+        testTitle: test.title,
+        course: test.course,
+        result: studentResult || null
+      };
+    });
+    
+    res.json(studentResults);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch student test results', error: error.message });
+  }
+});
+
 export default router;
