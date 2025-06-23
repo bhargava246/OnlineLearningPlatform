@@ -6,7 +6,7 @@ import { getProgressColor, getStatusColor } from "@/lib/utils";
 import type { Course, Enrollment } from "@shared/schema";
 
 interface CourseCardProps {
-  course: Course;
+  course: any; // MongoDB course structure
   enrollment?: Enrollment;
 }
 
@@ -38,7 +38,7 @@ export default function CourseCard({ course, enrollment }: CourseCardProps) {
           </Badge>
         </div>
         <div className="absolute bottom-4 right-4">
-          <Link href={`/courses/${course.id}`}>
+          <Link href={`/courses/${course._id || course.id}`}>
             <Button size="icon" className="rounded-full bg-white/90 hover:bg-white text-primary">
               <Play className="h-4 w-4" />
             </Button>
@@ -52,11 +52,11 @@ export default function CourseCard({ course, enrollment }: CourseCardProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Clock className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-500">{course.duration} hours</span>
+            <span className="text-sm text-gray-500">{Math.floor((course.duration || 0) / 60)} hours</span>
           </div>
           <div className="flex items-center space-x-2">
             <Video className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-500">{course.videoCount} videos</span>
+            <span className="text-sm text-gray-500">{course.modules?.length || 0} videos</span>
           </div>
         </div>
         
@@ -75,7 +75,7 @@ export default function CourseCard({ course, enrollment }: CourseCardProps) {
           </div>
         )}
         
-        <Link href={`/courses/${course.id}`}>
+        <Link href={`/courses/${course._id || course.id}`}>
           <Button variant={getButtonVariant()} className="w-full">
             {getButtonText()}
           </Button>

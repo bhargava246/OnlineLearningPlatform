@@ -14,8 +14,8 @@ export default function Courses() {
   // Mock user ID - in real app this would come from auth context
   const userId = 2;
 
-  const { data: courses, isLoading: coursesLoading } = useQuery<Course[]>({
-    queryKey: ["/api/courses"],
+  const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({
+    queryKey: ["/api/mongo/courses"],
   });
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
@@ -32,7 +32,7 @@ export default function Courses() {
     return matchesSearch && matchesCategory;
   }) || [];
 
-  const getEnrollmentForCourse = (courseId: number) => {
+  const getEnrollmentForCourse = (courseId: any) => {
     return enrollments?.find(e => e.courseId === courseId);
   };
 
@@ -88,9 +88,9 @@ export default function Courses() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCourses.map((course) => (
           <CourseCard
-            key={course.id}
+            key={course._id || course.id}
             course={course}
-            enrollment={getEnrollmentForCourse(course.id)}
+            enrollment={getEnrollmentForCourse(course._id || course.id)}
           />
         ))}
       </div>
