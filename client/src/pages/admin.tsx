@@ -380,7 +380,7 @@ export default function Admin() {
                       <FileText className="h-3 w-3" />
                       <span className="font-medium">Notes:</span> {course.notes?.length || 0} PDFs
                     </p>
-                    <p><span className="font-medium">Duration:</span> {Math.floor(course.duration / 60)} hours</p>
+                    <p><span className="font-medium">Duration:</span> {Math.floor((course.duration || 0) / 60)} hours</p>
                     <p>
                       <span className="font-medium">Status:</span>{" "}
                       <span className="text-green-600">
