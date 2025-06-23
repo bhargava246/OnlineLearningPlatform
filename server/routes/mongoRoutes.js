@@ -101,7 +101,7 @@ router.get('/courses', async (req, res) => {
     
     const courses = await Course.find(query)
       .populate('instructor', 'firstName lastName')
-      .select('-modules.correctAnswer -notes');
+      .select('-modules.correctAnswer');
     
     res.json(courses);
   } catch (error) {
