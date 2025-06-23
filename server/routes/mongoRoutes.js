@@ -10,26 +10,18 @@ const router = express.Router();
 // JWT Secret (in production, use environment variable)
 const JWT_SECRET = 'your-secret-key';
 
-// Auth middleware
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'Access token required' });
+// Admin middleware - works with Replit auth
+const requireAdmin = (req, res, next) => {
+  if (req.user?.dbUser?.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
   }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
-    req.user = user;
-    next();
-  });
+  next();
 };
 
-// Admin middleware
-const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Admin access required' });
+// Student data filter middleware
+const filterStudentData = (req, res, next) => {
+  if (req.user?.dbUser?.role === 'student') {
+    req.studentId = req.user.dbUser._id;
   }
   next();
 };
@@ -125,7 +117,7 @@ router.get('/courses/:id', async (req, res) => {
 });
 
 // Admin: Create course with modules and notes
-router.post('/courses', async (req, res) => {
+router.post('/courses', requireAdmin, async (req, res) => {
   try {
     const {
       title,
@@ -163,7 +155,7 @@ router.post('/courses', async (req, res) => {
 });
 
 // Admin: Update course
-router.put('/courses/:id', async (req, res) => {
+router.put('/courses/:id', requireAdmin, async (req, res) => {
   try {
     const course = await Course.findByIdAndUpdate(
       req.params.id,
@@ -182,7 +174,7 @@ router.put('/courses/:id', async (req, res) => {
 });
 
 // Admin: Delete course
-router.delete('/courses/:id', async (req, res) => {
+router.delete('/courses/:id', requireAdmin, async (req, res) => {
   try {
     const course = await Course.findByIdAndUpdate(
       req.params.id,
@@ -337,10 +329,15 @@ router.put('/enrollments/:studentId/:courseId/progress', async (req, res) => {
   }
 });
 
-// User stats
-router.get('/users/:id/stats', async (req, res) => {
+// User stats - students can only see their own stats
+router.get('/users/:id/stats', filterStudentData, async (req, res) => {
   try {
     const userId = req.params.id;
+    
+    // If student, only allow access to their own stats
+    if (req.user?.dbUser?.role === 'student' && req.user.dbUser._id.toString() !== userId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
     
     const enrollments = await Enrollment.find({ student: userId }).populate('course');
     const enrolledCourses = enrollments.length;
@@ -404,7 +401,7 @@ router.get('/tests/:id', async (req, res) => {
 });
 
 // Admin: Create test
-router.post('/tests', async (req, res) => {
+router.post('/tests', requireAdmin, async (req, res) => {
   try {
     const {
       title,
@@ -508,8 +505,47 @@ router.get('/students/by-username/:username', async (req, res) => {
   }
 });
 
+// Get student's own test results
+router.get('/student/my-results', async (req, res) => {
+  try {
+    const currentUser = req.user?.dbUser;
+    if (!currentUser || currentUser.role !== 'student') {
+      return res.status(403).json({ message: 'Student access required' });
+    }
+    
+    const tests = await Test.find({ isActive: true })
+      .populate('course', 'title category')
+      .select('title course results maxScore');
+    
+    const myResults = [];
+    
+    tests.forEach(test => {
+      const result = test.results.find(
+        r => r.student.toString() === currentUser._id.toString()
+      );
+      
+      if (result) {
+        myResults.push({
+          testId: test._id,
+          testTitle: test.title,
+          course: test.course,
+          maxScore: test.maxScore,
+          score: result.score,
+          grade: result.grade,
+          completedAt: result.completedAt,
+          timeSpent: result.timeSpent
+        });
+      }
+    });
+    
+    res.json(myResults);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch test results', error: error.message });
+  }
+});
+
 // Get all students with their test results for admin
-router.get('/admin/student-results', async (req, res) => {
+router.get('/admin/student-results', requireAdmin, async (req, res) => {
   try {
     const students = await User.find({ role: 'student', isActive: true })
       .select('firstName lastName email');

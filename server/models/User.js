@@ -39,6 +39,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  replitId: {
+    type: String,
+    unique: true,
+    sparse: true // Allow null values but enforce uniqueness when present
+  },
+  profileImageUrl: {
+    type: String,
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true

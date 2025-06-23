@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import StatsCard from "@/components/stats-card";
 import { formatTimeAgo, getActivityIcon, getActivityIconColor } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { RecentActivity } from "@shared/schema";
 
 export default function Dashboard() {
-  // Mock user ID - in real app this would come from auth context
-  const userId = 2;
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: [`/api/users/${userId}/stats`],
@@ -37,7 +38,7 @@ export default function Dashboard() {
       {/* Welcome Section */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-900">
-          Welcome back, <span>John</span>!
+          Welcome back, <span>{user?.firstName}</span>!
         </h2>
         <p className="text-gray-600 mt-2">Continue your learning journey</p>
       </div>

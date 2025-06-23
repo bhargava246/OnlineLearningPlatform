@@ -4,10 +4,36 @@ import { storage } from "./storage";
 import { insertUserSchema, insertCourseSchema, insertTestSchema, insertTestResultSchema } from "@shared/schema";
 import { z } from "zod";
 import mongoRoutes from "./routes/mongoRoutes.js";
+import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Add MongoDB routes
-  app.use('/api/mongo', mongoRoutes);
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth routes for user info
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user?.dbUser;
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        profileImageUrl: user.profileImageUrl || user.avatar
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Add MongoDB routes with authentication
+  app.use('/api/mongo', isAuthenticated, mongoRoutes);
   
   // Legacy routes (keeping for backward compatibility)
   // Auth routes

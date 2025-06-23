@@ -1,22 +1,34 @@
 import { Link, useLocation } from "wouter";
-import { Bell } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Header() {
   const [location] = useLocation();
+  const { user, isAdmin } = useAuth();
 
   const navigation = [
     { name: "Dashboard", href: "/" },
     { name: "My Courses", href: "/courses" },
     { name: "Test Results", href: "/test-results" },
-    { name: "Admin", href: "/admin" },
+    ...(isAdmin ? [{ name: "Admin Panel", href: "/admin" }] : []),
   ];
 
   const isActive = (href: string) => {
     if (href === "/" && location === "/") return true;
     if (href !== "/" && location.startsWith(href)) return true;
     return false;
+  };
+
+  const handleLogout = () => {
+    window.location.href = '/api/logout';
   };
 
   return (
@@ -51,13 +63,27 @@ export default function Header() {
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5 text-gray-400" />
             </Button>
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" />
-                <AvatarFallback>JS</AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium text-gray-700">John Smith</span>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center space-x-3 cursor-pointer">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profileImageUrl} />
+                    <AvatarFallback>
+                      {user?.firstName?.[0]}{user?.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium text-gray-700">
+                    {user?.firstName} {user?.lastName}
+                  </span>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,17 +25,20 @@ interface TestResultWithDetails extends TestResult {
 }
 
 export default function TestResults() {
+  const { user, isAdmin } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState("all");
   
-  // Get all students
+  // Get test results based on user role
+  const { data: testResults, isLoading } = useQuery<any[]>({
+    queryKey: isAdmin ? ['/api/mongo/admin/student-results'] : ['/api/mongo/student/my-results'],
+    enabled: !!user,
+  });
+
+  // Get all students (admin only)
   const { data: students } = useQuery<any[]>({
     queryKey: ['/api/mongo/users'],
     select: (data) => data.filter((user: any) => user.role === 'student'),
-  });
-
-  // Get all tests with results
-  const { data: tests, isLoading } = useQuery<any[]>({
-    queryKey: ['/api/mongo/tests'],
+    enabled: isAdmin,
   });
 
   if (isLoading) {
