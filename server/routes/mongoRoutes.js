@@ -862,4 +862,108 @@ router.get('/students/:studentId/test-results', async (req, res) => {
   }
 });
 
+// Get all users (admin only)
+router.get('/admin/users', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find().select('-password').populate('enrolledCourses');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+  }
+});
+
+// Get pending approval requests (admin only)
+router.get('/admin/pending-approvals', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const pendingUsers = await User.find({ isApproved: false }).select('-password');
+    res.json(pendingUsers);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch pending approvals', error: error.message });
+  }
+});
+
+// Approve user with course enrollment (admin only)
+router.put('/admin/users/:id/approval', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isApproved, enrolledCourses = [] } = req.body;
+    
+    const updateData = { isApproved };
+    if (isApproved && enrolledCourses.length > 0) {
+      updateData.enrolledCourses = enrolledCourses;
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      id, 
+      updateData,
+      { new: true }
+    ).select('-password').populate('enrolledCourses');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ 
+      message: `User ${isApproved ? 'approved and enrolled in courses' : 'rejected'} successfully`,
+      user 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update user approval', error: error.message });
+  }
+});
+
+// Suspend user from courses (admin only)
+router.put('/admin/users/:id/suspend', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { coursesToRemove } = req.body;
+    
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Remove specified courses from user's enrolled courses
+    user.enrolledCourses = user.enrolledCourses.filter(
+      courseId => !coursesToRemove.includes(courseId.toString())
+    );
+    
+    await user.save();
+    
+    const updatedUser = await User.findById(id).select('-password').populate('enrolledCourses');
+    
+    res.json({ 
+      message: 'User suspended from selected courses successfully',
+      user: updatedUser 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to suspend user', error: error.message });
+  }
+});
+
+// Edit user courses (admin only)
+router.put('/admin/users/:id/courses', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { enrolledCourses } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      id, 
+      { enrolledCourses },
+      { new: true }
+    ).select('-password').populate('enrolledCourses');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ 
+      message: 'User courses updated successfully',
+      user 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update user courses', error: error.message });
+  }
+});
+
 export default router;

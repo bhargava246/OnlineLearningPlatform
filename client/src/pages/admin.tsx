@@ -9,6 +9,7 @@ import CourseForm from "@/components/admin/course-form";
 import TestForm from "@/components/admin/test-form";
 import StudentGrades from "@/components/admin/student-grades";
 import UserApprovals from "@/components/admin/user-approvals";
+import UserManagement from "@/components/admin/user-management";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -218,6 +219,11 @@ export default function Admin() {
 
         {/* User Management Tab */}
         <TabsContent value="users" className="space-y-6">
+          <UserManagement />
+        </TabsContent>
+
+        {/* Legacy User Management Display */}
+        <TabsContent value="legacy-users" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
             <Button>
