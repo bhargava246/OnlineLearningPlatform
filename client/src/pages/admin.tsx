@@ -54,6 +54,10 @@ export default function Admin() {
     queryKey: ["/api/mongo/courses"],
   });
 
+  const { data: tests, isLoading: testsLoading } = useQuery<any[]>({
+    queryKey: ["/api/mongo/tests"],
+  });
+
   // Delete course mutation
   const deleteCourse = useMutation({
     mutationFn: async (courseId: string) => {
@@ -423,21 +427,68 @@ export default function Admin() {
             </Dialog>
           </div>
 
-          {/* Test List */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="text-center py-8 text-gray-500">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Test Creation</h3>
-              <p className="text-gray-500 mb-4">Create tests for your courses to assess student learning</p>
-              <Button 
-                variant="outline"
-                onClick={() => setShowTestForm(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Test
-              </Button>
+          {/* Existing Tests */}
+          {testsLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
             </div>
-          </div>
+          ) : tests && tests.length > 0 ? (
+            <div className="space-y-4">
+              {tests.map((test: any) => (
+                <div key={test._id || test.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">{test.title}</h4>
+                      <p className="text-gray-600 mb-4">{test.description}</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">Course:</span>
+                          <p className="text-gray-600">{test.course?.title || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Questions:</span>
+                          <p className="text-gray-600">{test.questions?.length || 0}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Time Limit:</span>
+                          <p className="text-gray-600">{test.timeLimit || 60} minutes</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Passing Score:</span>
+                          <p className="text-gray-600">{test.passingScore || 60}%</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="ghost" size="icon" title="Edit Test">
+                        <Edit className="h-4 w-4 text-gray-400" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Delete Test">
+                        <Trash2 className="h-4 w-4 text-red-400" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="text-center py-8 text-gray-500">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Tests Found</h3>
+                <p className="text-gray-500 mb-4">Create tests for your courses to assess student learning</p>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowTestForm(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Test
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Student Grades Tab */}

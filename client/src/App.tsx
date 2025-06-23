@@ -10,6 +10,7 @@ import Courses from "@/pages/courses";
 import CourseDetail from "@/pages/course-detail";
 import TestResults from "@/pages/test-results";
 import Admin from "@/pages/admin";
+import VideoPlayer from "@/pages/video-player";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/courses" component={Courses} />
         <Route path="/courses/:id" component={CourseDetail} />
+        <Route path="/video/:courseId/:moduleId" component={VideoPlayer} />
         <Route path="/test-results" component={TestResults} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
