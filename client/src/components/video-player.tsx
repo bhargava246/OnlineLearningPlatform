@@ -1,7 +1,5 @@
-import { useState } from "react";
+import { Play, Clock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, SkipBack, SkipForward, Maximize } from "lucide-react";
 
 interface VideoPlayerProps {
   title: string;
@@ -9,53 +7,74 @@ interface VideoPlayerProps {
   videoUrl?: string;
 }
 
+// Extract YouTube video ID from various YouTube URL formats
+const getYouTubeVideoId = (url: string): string | null => {
+  const patterns = [
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&\n?#]+)/,
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^&\n?#]+)/,
+    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^&\n?#]+)/,
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/v\/([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+};
+
 export default function VideoPlayer({ title, duration, videoUrl }: VideoPlayerProps) {
-  const [playbackSpeed, setPlaybackSpeed] = useState("1x");
-
-  return (
-    <div className="space-y-6">
-      {/* Video Player */}
-      <div className="video-player-container">
-        <div className="text-center text-white">
-          <i className="fas fa-play-circle text-6xl mb-4 opacity-80"></i>
-          <p className="text-lg">{title}</p>
-          <p className="text-sm opacity-70">Duration: {duration}</p>
+  const videoId = videoUrl ? getYouTubeVideoId(videoUrl) : null;
+  
+  if (!videoUrl || !videoId) {
+    return (
+      <div className="bg-gray-100 rounded-lg p-8 text-center">
+        <div className="text-gray-400 mb-4">
+          <Play className="h-16 w-16 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+          <p className="text-sm text-gray-500 flex items-center justify-center gap-1">
+            <Clock className="h-4 w-4" />
+            {duration}
+          </p>
         </div>
+        <p className="text-gray-500">No video available</p>
       </div>
+    );
+  }
 
-      {/* Video Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button>
-            <Play className="h-4 w-4 mr-2" />
-            Play
-          </Button>
-          <Button variant="ghost">
-            <SkipBack className="h-4 w-4 mr-1" />
-            Previous
-          </Button>
-          <Button variant="ghost">
-            Next
-            <SkipForward className="h-4 w-4 ml-1" />
-          </Button>
+  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="aspect-video">
+          <iframe
+            src={embedUrl}
+            title={title}
+            className="w-full h-full"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
         </div>
-        <div className="flex items-center space-x-2">
-          <Select value={playbackSpeed} onValueChange={setPlaybackSpeed}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0.5x">0.5x</SelectItem>
-              <SelectItem value="0.75x">0.75x</SelectItem>
-              <SelectItem value="1x">1x</SelectItem>
-              <SelectItem value="1.25x">1.25x</SelectItem>
-              <SelectItem value="1.5x">1.5x</SelectItem>
-              <SelectItem value="2x">2x</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" size="icon">
-            <Maximize className="h-4 w-4" />
-          </Button>
+        <div className="p-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{title}</h3>
+              <p className="text-sm text-gray-500 flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                Duration: {duration}
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.open(videoUrl, '_blank')}
+            >
+              <ExternalLink className="h-4 w-4 mr-1" />
+              Watch on YouTube
+            </Button>
+          </div>
         </div>
       </div>
     </div>
