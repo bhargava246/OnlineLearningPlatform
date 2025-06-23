@@ -10,12 +10,18 @@ import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import MemoryStore from "memorystore";
 
-// Set default REPLIT_DOMAINS if not provided
+// Set default environment variables for local development
 if (!process.env.REPLIT_DOMAINS) {
   // For local development, use localhost
   const hostname = 'localhost:5000';
   process.env.REPLIT_DOMAINS = hostname;
   console.log(`Using default REPLIT_DOMAINS for local development: ${hostname}`);
+}
+
+if (!process.env.REPL_ID) {
+  // For local development, use a mock REPL_ID
+  process.env.REPL_ID = 'local-development-id';
+  console.log(`Using default REPL_ID for local development`);
 }
 
 const getOidcConfig = memoize(
@@ -77,6 +83,12 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Skip OAuth setup for local development without proper REPL_ID
+  if (process.env.REPL_ID === 'local-development-id') {
+    console.log('Skipping OAuth setup for local development');
+    return;
+  }
 
   const config = await getOidcConfig();
 

@@ -7,7 +7,7 @@ import mongoRoutes from "./routes/mongoRoutes.js";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication
+  // Setup authentication (will skip OAuth for local development)
   await setupAuth(app);
 
   // Auth routes for user info
@@ -32,8 +32,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add MongoDB routes with authentication
-  app.use('/api/mongo', isAuthenticated, mongoRoutes);
+  // Add MongoDB routes (skip auth middleware for local development)
+  if (process.env.REPL_ID === 'local-development-id') {
+    app.use('/api/mongo', mongoRoutes);
+  } else {
+    app.use('/api/mongo', isAuthenticated, mongoRoutes);
+  }
   
   // Legacy routes (keeping for backward compatibility)
   // Auth routes
