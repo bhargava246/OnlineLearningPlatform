@@ -2,11 +2,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import StatsCard from "@/components/stats-card";
+import CourseForm from "@/components/admin/course-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getGradeColor } from "@/lib/utils";
+import { Plus, Youtube, FileText, Edit, Trash2 } from "lucide-react";
 import type { User, Course, TestResult } from "@shared/schema";
 
 interface AdminTestResult extends TestResult {
@@ -23,17 +26,23 @@ interface AdminTestResult extends TestResult {
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("analytics");
+  const [showCourseForm, setShowCourseForm] = useState(false);
 
-  const { data: adminStats, isLoading: statsLoading } = useQuery({
-    queryKey: ["/api/admin/stats"],
+  const { data: adminStats, isLoading: statsLoading } = useQuery<{
+    totalUsers: number;
+    activeCourses: number;
+    testsCompleted: number;
+    averageScore: number;
+  }>({
+    queryKey: ["/api/mongo/admin/stats"],
   });
 
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/mongo/users"],
   });
 
   const { data: courses, isLoading: coursesLoading } = useQuery<Course[]>({
-    queryKey: ["/api/courses"],
+    queryKey: ["/api/mongo/courses"],
   });
 
   if (statsLoading && activeTab === "analytics") {
@@ -235,10 +244,20 @@ export default function Admin() {
         <TabsContent value="courses" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold text-gray-900">Course Management</h3>
-            <Button>
-              <i className="fas fa-plus mr-2"></i>
-              Create Course
-            </Button>
+            <Dialog open={showCourseForm} onOpenChange={setShowCourseForm}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Course
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <CourseForm 
+                  onSuccess={() => setShowCourseForm(false)}
+                  onCancel={() => setShowCourseForm(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {coursesLoading ? (
@@ -249,33 +268,44 @@ export default function Admin() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses?.map((course) => (
-                <div key={course.id} className="bg-white border border-gray-200 rounded-lg p-6">
+              {courses?.map((course: any) => (
+                <div key={course._id || course.id} className="bg-white border border-gray-200 rounded-lg p-6">
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="text-lg font-semibold text-gray-900">{course.title}</h4>
                     <div className="flex space-x-2">
                       <Button variant="ghost" size="icon">
-                        <i className="fas fa-edit text-gray-400"></i>
+                        <Edit className="h-4 w-4 text-gray-400" />
                       </Button>
                       <Button variant="ghost" size="icon">
-                        <i className="fas fa-trash text-red-400"></i>
+                        <Trash2 className="h-4 w-4 text-red-400" />
                       </Button>
                     </div>
                   </div>
                   <div className="space-y-2 text-sm text-gray-600">
                     <p><span className="font-medium">Category:</span> {course.category}</p>
-                    <p><span className="font-medium">Videos:</span> {course.videoCount} lectures</p>
-                    <p><span className="font-medium">Duration:</span> {course.duration} hours</p>
+                    <p><span className="font-medium">Level:</span> {course.level}</p>
+                    <p className="flex items-center gap-1">
+                      <Youtube className="h-3 w-3" />
+                      <span className="font-medium">Videos:</span> {course.modules?.length || 0} lectures
+                    </p>
+                    <p className="flex items-center gap-1">
+                      <FileText className="h-3 w-3" />
+                      <span className="font-medium">Notes:</span> {course.notes?.length || 0} PDFs
+                    </p>
+                    <p><span className="font-medium">Duration:</span> {Math.floor(course.duration / 60)} hours</p>
                     <p>
                       <span className="font-medium">Status:</span>{" "}
                       <span className="text-green-600">
                         {course.isActive ? "Active" : "Inactive"}
                       </span>
                     </p>
+                    {course.price > 0 && (
+                      <p><span className="font-medium">Price:</span> ${course.price}</p>
+                    )}
                   </div>
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <Button variant="ghost" size="sm">
-                      <i className="fas fa-cog mr-1"></i>
+                      <Edit className="h-3 w-3 mr-1" />
                       Manage Content
                     </Button>
                   </div>

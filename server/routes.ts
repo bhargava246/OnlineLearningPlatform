@@ -3,8 +3,13 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertCourseSchema, insertTestSchema, insertTestResultSchema } from "@shared/schema";
 import { z } from "zod";
+import mongoRoutes from "./routes/mongoRoutes.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add MongoDB routes
+  app.use('/api/mongo', mongoRoutes);
+  
+  // Legacy routes (keeping for backward compatibility)
   // Auth routes
   app.post("/api/auth/login", async (req, res) => {
     try {
