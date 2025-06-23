@@ -64,7 +64,7 @@ export default function AuthPage() {
   const onLogin = async (data: LoginFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/postgres/auth/login", {
+      const response = await fetch("/api/mongo/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export default function AuthPage() {
           title: "Login successful",
           description: "Welcome back!",
         });
-        setLocation("/courses");
+        setLocation("/");
       } else {
         toast({
           title: "Login failed",
@@ -103,7 +103,7 @@ export default function AuthPage() {
     setIsSubmitting(true);
     setRegistrationMessage("");
     try {
-      const response = await fetch("/api/postgres/auth/register", {
+      const response = await fetch("/api/mongo/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

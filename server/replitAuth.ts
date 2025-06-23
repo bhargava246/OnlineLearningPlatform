@@ -55,10 +55,13 @@ function updateUserSession(
   user.expires_at = user.claims?.exp;
 }
 
+// Import User model for MongoDB operations
+import User from './models/User.js';
+
 async function findUserByEmail(email: string) {
   try {
-    const userResult = await db.select().from(users).where(eq(users.email, email));
-    return userResult.length > 0 ? userResult[0] : null;
+    const user = await User.findOne({ email });
+    return user;
   } catch (error) {
     console.error('Error finding user:', error);
     return null;
@@ -141,8 +144,8 @@ export async function setupAuth(app: Express) {
             } else {
               // Store user in session
               req.user.dbUser = existingUser;
-              // Existing user - redirect to courses page
-              return res.redirect("/courses");
+              // Existing user - redirect to dashboard
+              return res.redirect("/");
             }
           } catch (error) {
             console.error("Error checking setup status:", error);

@@ -68,7 +68,7 @@ export default function AccountSetup() {
     setError('');
     
     try {
-      const response = await fetch('/api/postgres/auth/complete-setup', {
+      const response = await fetch('/api/mongo/auth/complete-setup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,11 +88,11 @@ export default function AccountSetup() {
       if (response.ok) {
         // Store JWT token
         localStorage.setItem('authToken', data.token);
-        setSuccess('Account setup completed successfully! Redirecting to your courses...');
+        setSuccess('Account setup completed successfully! Redirecting to dashboard...');
         
-        // Redirect to courses page after a short delay
+        // Redirect to dashboard after a short delay
         setTimeout(() => {
-          setLocation('/courses');
+          setLocation('/');
         }, 1500);
       } else {
         setError(data.message || 'Setup failed. Please try again.');

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertCourseSchema, insertTestSchema, insertTestResultSchema } from "@shared/schema";
 import { z } from "zod";
-import pgRoutes from "./routes/pgRoutes.js";
+import mongoRoutes from "./routes/mongoRoutes.js";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -32,11 +32,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add PostgreSQL routes with authentication
-  app.use('/api/postgres', pgRoutes);
-  
-  // Legacy MongoDB routes (for backward compatibility during migration)
-  app.use('/api/mongo', isAuthenticated, pgRoutes);
+  // Add MongoDB routes with authentication
+  app.use('/api/mongo', isAuthenticated, mongoRoutes);
   
   // Legacy routes (keeping for backward compatibility)
   // Auth routes

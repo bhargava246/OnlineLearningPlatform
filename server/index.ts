@@ -1,8 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db } from "./db.js";
-import { users } from "@shared/schema";
+import { connectDB } from "./config/database.js";
 
 const app = express();
 app.use(express.json());
@@ -39,47 +38,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Test PostgreSQL connection and create default users
-  try {
-    await db.execute("SELECT 1");
-    console.log("PostgreSQL Connected successfully");
-    
-    // Create default admin and student users
-    const bcrypt = await import('bcryptjs');
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    
-    try {
-      await db.insert(users).values([
-        {
-          username: 'admin',
-          email: 'admin@eduplatform.com',
-          password: hashedPassword,
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'admin',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-          isActive: true
-        },
-        {
-          username: 'john',
-          email: 'john@example.com',
-          password: hashedPassword,
-          firstName: 'John',
-          lastName: 'Smith',
-          role: 'student',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-          isActive: true
-        }
-      ]).onConflictDoNothing();
-      console.log('Default users initialized');
-    } catch (userError) {
-      // Users might already exist, which is fine
-      console.log('Users already exist or initialization skipped');
-    }
-  } catch (error) {
-    console.error("Error connecting to PostgreSQL:", error);
-    process.exit(1);
-  }
+  // Connect to MongoDB
+  await connectDB();
   
   const server = await registerRoutes(app);
 
