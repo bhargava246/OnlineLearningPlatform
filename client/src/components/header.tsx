@@ -34,15 +34,15 @@ export default function Header() {
             <nav className="hidden md:flex space-x-8">
               {navigation.map((item) => (
                 <Link key={item.name} href={item.href}>
-                  <a
-                    className={`px-1 pb-4 pt-5 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                  <span
+                    className={`px-1 pb-4 pt-5 text-sm font-medium border-b-2 transition-colors duration-200 cursor-pointer ${
                       isActive(item.href)
                         ? "text-primary border-primary"
                         : "text-gray-500 hover:text-gray-700 border-transparent"
                     }`}
                   >
                     {item.name}
-                  </a>
+                  </span>
                 </Link>
               ))}
             </nav>
