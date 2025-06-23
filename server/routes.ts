@@ -318,6 +318,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send("Mock PDF content");
   });
 
+  // Mount MongoDB routes
+  app.use('/api/mongo', mongoRoutes);
+
   const httpServer = createServer(app);
   return httpServer;
 }

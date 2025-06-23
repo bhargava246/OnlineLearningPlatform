@@ -49,7 +49,78 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-// Email/Password registration
+// Check if user has completed setup (for Replit auth flow)
+router.post('/auth/check-setup', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    const user = await User.findOne({ email });
+    const hasSetup = !!user;
+    
+    res.json({ hasSetup });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to check setup status', error: error.message });
+  }
+});
+
+// Complete account setup after Replit email verification
+router.post('/auth/complete-setup', async (req, res) => {
+  try {
+    const { email, firstName, lastName, username, password, replitId, profileImageUrl } = req.body;
+    
+    // Check if user already exists with this email or username
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { username }] 
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ 
+        message: 'Account already exists with this email or username' 
+      });
+    }
+    
+    // Create new user (not approved by default)
+    const user = new User({
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      role: 'student',
+      isApproved: false, // Requires admin approval
+      replitId,
+      profileImageUrl
+    });
+    
+    await user.save();
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, username: user.username, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    res.status(201).json({ 
+      message: 'Account setup complete! Your account is pending approval.',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isApproved: user.isApproved,
+        approvedCourses: user.approvedCourses || []
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Account setup failed', error: error.message });
+  }
+});
+
+// Email/Password registration (direct registration)
 router.post('/auth/register', async (req, res) => {
   try {
     const { username, email, password, firstName, lastName } = req.body;

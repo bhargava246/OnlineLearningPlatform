@@ -18,14 +18,27 @@ export default function Landing() {
             Transform your learning journey with our comprehensive education platform. 
             Access courses, track progress, and achieve your goals.
           </p>
-          <Button 
-            size="lg" 
-            className="px-8 py-4 text-lg"
-            onClick={() => setLocation('/auth')}
-          >
-            <GraduationCap className="mr-2 h-5 w-5" />
-            Get Started - Sign In
-          </Button>
+          <div className="space-y-4">
+            <Button 
+              size="lg" 
+              className="px-8 py-4 text-lg w-full sm:w-auto"
+              onClick={() => window.location.href = '/api/login'}
+            >
+              <GraduationCap className="mr-2 h-5 w-5" />
+              Get Started - Verify Email
+            </Button>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              We'll verify your email first, then you can set up your account
+            </p>
+            <div className="text-center">
+              <Button 
+                variant="outline"
+                onClick={() => setLocation('/auth')}
+              >
+                Already have username/password? Sign in here
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Features */}

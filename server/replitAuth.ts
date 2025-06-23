@@ -103,8 +103,7 @@ export async function setupAuth(app: Express) {
     try {
       const user = {};
       updateUserSession(user, tokens);
-      const dbUser = await upsertUser(tokens.claims());
-      (user as any).dbUser = dbUser;
+      // Don't create MongoDB user here - let them set up username/password
       verified(null, user);
     } catch (error) {
       verified(error, null);
@@ -135,9 +134,46 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+    passport.authenticate(`replitauth:${req.hostname}`, (err, user) => {
+      if (err) {
+        return res.redirect("/api/login");
+      }
+      if (!user) {
+        return res.redirect("/api/login");
+      }
+      
+      req.logIn(user, async (err) => {
+        if (err) {
+          return res.redirect("/api/login");
+        }
+        
+        // Check if user has completed account setup
+        const claims = user.claims;
+        if (claims && claims.email) {
+          try {
+            const response = await fetch(`${req.protocol}://${req.hostname}/api/mongo/auth/check-setup`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ email: claims.email }),
+            });
+            
+            if (response.ok) {
+              const { hasSetup } = await response.json();
+              if (!hasSetup) {
+                // New user - redirect to account setup
+                return res.redirect("/account-setup");
+              }
+            }
+          } catch (error) {
+            console.error("Error checking setup status:", error);
+          }
+        }
+        
+        // Existing user - redirect to dashboard
+        res.redirect("/");
+      });
     })(req, res, next);
   });
 

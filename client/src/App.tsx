@@ -14,6 +14,7 @@ import Admin from "@/pages/admin";
 import VideoPlayer from "@/pages/video-player";
 import Landing from "@/pages/landing";
 import AuthPage from "@/pages/auth-page";
+import AccountSetup from "@/pages/account-setup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,6 +34,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/account-setup" component={AccountSetup} />
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
