@@ -4,9 +4,10 @@ import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
-import mongoose from "mongoose";
-// @ts-ignore - JS model file
-import User from "./models/User.js";
+// PostgreSQL integration for user authentication
+import { db } from './db.js';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 import MemoryStore from "memorystore";
 
 if (!process.env.REPLIT_DOMAINS) {
@@ -54,37 +55,13 @@ function updateUserSession(
   user.expires_at = user.claims?.exp;
 }
 
-async function upsertUser(claims: any) {
+async function findUserByEmail(email: string) {
   try {
-    // Check if user exists by Replit ID
-    let user = await User.findOne({ replitId: claims["sub"] });
-    
-    if (!user) {
-      // Create new user with student role by default
-      user = new User({
-        replitId: claims["sub"],
-        email: claims["email"],
-        firstName: claims["first_name"] || 'User',
-        lastName: claims["last_name"] || '',
-        username: claims["email"]?.split('@')[0] || `user_${claims["sub"]}`,
-        profileImageUrl: claims["profile_image_url"],
-        role: 'student', // Default role for new users
-        password: Math.random().toString(36).slice(-8), // Random password since we use OAuth
-      });
-      await user.save();
-    } else {
-      // Update existing user
-      user.email = claims["email"];
-      user.firstName = claims["first_name"] || user.firstName;
-      user.lastName = claims["last_name"] || user.lastName;
-      user.profileImageUrl = claims["profile_image_url"];
-      await user.save();
-    }
-    
-    return user;
+    const userResult = await db.select().from(users).where(eq(users.email, email));
+    return userResult.length > 0 ? userResult[0] : null;
   } catch (error) {
-    console.error('Error upserting user:', error);
-    throw error;
+    console.error('Error finding user:', error);
+    return null;
   }
 }
 
@@ -151,27 +128,29 @@ export async function setupAuth(app: Express) {
         const claims = user.claims;
         if (claims && claims.email) {
           try {
-            const response = await fetch(`${req.protocol}://${req.hostname}/api/mongo/auth/check-setup`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ email: claims.email }),
-            });
-            
-            if (response.ok) {
-              const { hasSetup } = await response.json();
-              if (!hasSetup) {
-                // New user - redirect to account setup
-                return res.redirect("/account-setup");
-              }
+            const existingUser = await findUserByEmail(claims.email);
+            if (!existingUser) {
+              // New user - redirect to account setup with email info
+              const setupParams = new URLSearchParams({
+                email: claims.email,
+                firstName: claims.first_name || '',
+                lastName: claims.last_name || '',
+                profileImageUrl: claims.profile_image_url || ''
+              });
+              return res.redirect(`/account-setup?${setupParams.toString()}`);
+            } else {
+              // Store user in session
+              req.user.dbUser = existingUser;
+              // Existing user - redirect to mycourses
+              return res.redirect("/mycourses");
             }
           } catch (error) {
             console.error("Error checking setup status:", error);
+            return res.redirect("/account-setup");
           }
         }
         
-        // Existing user - redirect to dashboard
+        // Fallback redirect
         res.redirect("/");
       });
     })(req, res, next);

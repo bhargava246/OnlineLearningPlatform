@@ -1,15 +1,11 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
-import { Loader2, CheckCircle, User } from "lucide-react";
+import { Loader2, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 const setupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),

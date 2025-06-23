@@ -14,7 +14,7 @@ import Admin from "@/pages/admin";
 import VideoPlayer from "@/pages/video-player";
 import Landing from "@/pages/landing";
 import AuthPage from "@/pages/auth-page";
-import AccountSetup from "@/pages/account-setup";
+import AccountSetup from "@/pages/AccountSetup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -43,6 +43,13 @@ function Router() {
             <div className="min-h-screen bg-gray-50">
               <Header />
               <Dashboard />
+              <Footer />
+            </div>
+          </Route>
+          <Route path="/mycourses">
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <Courses />
               <Footer />
             </div>
           </Route>

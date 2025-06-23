@@ -125,6 +125,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **January 23, 2025**: Successfully migrated from MongoDB to PostgreSQL
+  - **Database Migration**: Converted all MongoDB schemas to PostgreSQL using Drizzle ORM
+  - **Authentication System Update**: Updated Replit OAuth and email/password authentication to use PostgreSQL
+  - **Route Migration**: Converted all API routes from MongoDB models to PostgreSQL queries
+  - **Security Improvements**: Implemented proper password hashing with bcrypt and JWT token management
+  - **Default Users**: Created default admin (username: admin, password: admin123) and student accounts
+  - **Account Setup Flow**: Replit signup redirects to account setup page, then to dashboard
+  - **Login Redirect**: Login now properly redirects to /mycourses page after authentication
+
 - **June 23, 2025**: Email/Password Authentication & User Approval Workflow Complete
   - **NEW: Dual Authentication System**
     - Primary: Email/password authentication with JWT tokens (default registration creates student accounts)
