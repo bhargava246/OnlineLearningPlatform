@@ -25,16 +25,20 @@ const courseSchema = z.object({
 const moduleSchema = z.object({
   title: z.string().min(1, "Module title is required"),
   description: z.string().optional(),
-  youtubeUrl: z.string().url("Please enter a valid YouTube URL").refine(
+  youtubeUrl: z.string().min(1, "YouTube URL is required").refine(
     (url) => /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/.test(url),
-    "Please enter a valid YouTube URL"
+    "Please enter a valid YouTube URL (youtube.com or youtu.be)"
   ),
   duration: z.number().min(1, "Duration must be at least 1 minute"),
+  orderIndex: z.number().min(0, "Order index must be 0 or greater").optional(),
 });
 
 const noteSchema = z.object({
   title: z.string().min(1, "Note title is required"),
-  pdfUrl: z.string().url("Please enter a valid PDF URL"),
+  pdfUrl: z.string().min(1, "PDF URL is required").refine(
+    (url) => /^https?:\/\/.+/.test(url),
+    "Please enter a valid URL"
+  ),
   fileSize: z.string().optional(),
 });
 
@@ -67,18 +71,21 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
 
   const createCourseMutation = useMutation({
     mutationFn: async (data: CourseFormData & { modules: ModuleFormData[]; notes: NoteFormData[] }) => {
+      console.log("Sending course data:", data);
       const response = await fetch("/api/mongo/courses", {
         method: "POST",
         body: JSON.stringify(data),
         headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) {
-        throw new Error("Failed to create course");
+        const errorText = await response.text();
+        console.error("Course creation failed:", errorText);
+        throw new Error(`Failed to create course: ${errorText}`);
       }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mongo/courses"] });
       toast({
         title: "Success",
         description: "Course created successfully",
@@ -141,11 +148,59 @@ export default function CourseForm({ onSuccess, onCancel }: CourseFormProps) {
   };
 
   const onSubmit = (data: CourseFormData) => {
+    // Validate modules and notes before submitting
+    const validatedModules = modules.map((module, index) => ({
+      ...module,
+      orderIndex: index,
+      duration: Number(module.duration) || 0,
+    }));
+
+    const validatedNotes = notes.map(note => ({
+      ...note,
+      fileSize: note.fileSize || 'Unknown',
+    }));
+
+    // Check if at least one module or note exists
+    if (validatedModules.length === 0 && validatedNotes.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please add at least one video module or PDF note",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate modules
+    for (const module of validatedModules) {
+      if (!module.title || !module.youtubeUrl || !module.duration) {
+        toast({
+          title: "Error",
+          description: "All video modules must have title, YouTube URL, and duration",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Validate notes
+    for (const note of validatedNotes) {
+      if (!note.title || !note.pdfUrl) {
+        toast({
+          title: "Error",
+          description: "All PDF notes must have title and URL",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const courseData = {
       ...data,
-      modules: modules.map((module, index) => ({ ...module, orderIndex: index })),
-      notes,
+      modules: validatedModules,
+      notes: validatedNotes,
     };
+    
+    console.log("Submitting course data:", courseData);
     createCourseMutation.mutate(courseData);
   };
 

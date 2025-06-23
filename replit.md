@@ -121,7 +121,17 @@ The application uses a comprehensive database schema with the following main ent
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **June 23, 2025**: MongoDB Integration Complete
+  - Successfully connected to user's MongoDB database (mongodb+srv://Himanshu:Himanshu123@himanshu.pe7xrly.mongodb.net/LMS)
+  - Implemented course creation with YouTube videos and PDF notes
+  - Course data uploads successfully to MongoDB with embedded modules and notes structure
+  - Course display working in "My Courses" section with MongoDB data
+  - Course detail pages load embedded YouTube videos and downloadable PDF links
+  - Admin course management fully operational with real-time database integration
+  - Fixed form validation to match MongoDB schema requirements
+
 ## Changelog
 
-Changelog:
-- June 23, 2025. Initial setup
+- June 23, 2025: Initial setup and MongoDB integration completed
