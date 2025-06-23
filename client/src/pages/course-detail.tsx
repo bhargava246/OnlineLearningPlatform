@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { X, Play, Clock, Youtube } from "lucide-react";
+import { X, Play, Clock, Youtube, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import PdfViewer from "@/components/pdf-viewer";
@@ -11,8 +11,20 @@ export default function CourseDetail() {
   const { id } = useParams();
   const courseId = id || "";
 
-  const { data: course, isLoading: courseLoading } = useQuery<any>({
+  const { data: course, isLoading: courseLoading, error } = useQuery<any>({
     queryKey: [`/api/mongo/courses/${courseId}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/mongo/courses/${courseId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch course");
+      }
+      return response.json();
+    },
     enabled: !!courseId,
   });
 
@@ -46,6 +58,33 @@ export default function CourseDetail() {
           </div>
         </div>
       </main>
+    );
+  }
+
+  if (error) {
+    const errorMessage = error.message;
+    if (errorMessage.includes('not enrolled')) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center p-8">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-4">You are not enrolled in this course.</p>
+            <p className="text-sm text-gray-500">Please contact an administrator for course access.</p>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Course</h2>
+          <p className="text-gray-600">{errorMessage}</p>
+        </div>
+      </div>
     );
   }
 

@@ -80,7 +80,8 @@ export default function AuthPage() {
           title: "Login successful",
           description: "Welcome back!",
         });
-        setLocation("/");
+        // Force page reload to ensure authentication state is updated
+        window.location.href = "/";
       } else {
         toast({
           title: "Login failed",

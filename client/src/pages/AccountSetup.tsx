@@ -90,9 +90,9 @@ export default function AccountSetup() {
         localStorage.setItem('authToken', data.token);
         setSuccess('Account setup completed successfully! Redirecting to dashboard...');
         
-        // Redirect to dashboard after a short delay
+        // Force page reload to ensure authentication state is updated
         setTimeout(() => {
-          setLocation('/');
+          window.location.href = '/';
         }, 1500);
       } else {
         setError(data.message || 'Setup failed. Please try again.');

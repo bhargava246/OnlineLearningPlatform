@@ -242,14 +242,30 @@ router.get('/users/:id', async (req, res) => {
   }
 });
 
-// Course routes
-router.get('/courses', async (req, res) => {
+// Course routes - with approval check
+router.get('/courses', verifyToken, async (req, res) => {
   try {
+    const user = req.user.dbUser;
+    
+    // Check if user is approved
+    if (!user.isApproved && user.role !== 'admin') {
+      return res.status(403).json({ 
+        message: 'Access denied. Your account is pending approval.',
+        requiresApproval: true 
+      });
+    }
+    
     const { category } = req.query;
     let query = { isActive: true };
     
     if (category && category !== 'all') {
       query.category = category;
+    }
+    
+    // For students, only show enrolled courses
+    if (user.role === 'student') {
+      const enrolledCourseIds = user.enrolledCourses || [];
+      query._id = { $in: enrolledCourseIds };
     }
     
     const courses = await Course.find(query)
@@ -262,13 +278,33 @@ router.get('/courses', async (req, res) => {
   }
 });
 
-router.get('/courses/:id', async (req, res) => {
+router.get('/courses/:id', verifyToken, async (req, res) => {
   try {
+    const user = req.user.dbUser;
+    
+    // Check if user is approved
+    if (!user.isApproved && user.role !== 'admin') {
+      return res.status(403).json({ 
+        message: 'Access denied. Your account is pending approval.',
+        requiresApproval: true 
+      });
+    }
+    
     const course = await Course.findById(req.params.id)
       .populate('instructor', 'firstName lastName');
     
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    // For students, check if they're enrolled in this course
+    if (user.role === 'student') {
+      const enrolledCourseIds = user.enrolledCourses?.map(id => id.toString()) || [];
+      if (!enrolledCourseIds.includes(req.params.id)) {
+        return res.status(403).json({ 
+          message: 'Access denied. You are not enrolled in this course.' 
+        });
+      }
     }
     
     res.json(course);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CourseCard from "@/components/course-card";
@@ -14,8 +14,20 @@ export default function Courses() {
   // Mock user ID - in real app this would come from auth context
   const userId = 2;
 
-  const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({
+  const { data: courses, isLoading: coursesLoading, error } = useQuery<any[]>({
     queryKey: ["/api/mongo/courses"],
+    queryFn: async () => {
+      const response = await fetch("/api/mongo/courses", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch courses");
+      }
+      return response.json();
+    },
   });
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
@@ -52,6 +64,33 @@ export default function Courses() {
           ))}
         </div>
       </main>
+    );
+  }
+
+  if (error) {
+    const errorMessage = error.message;
+    if (errorMessage.includes('pending approval')) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center p-8">
+            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-yellow-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Pending Approval</h2>
+            <p className="text-gray-600 mb-4">Your account is waiting for admin approval before you can access courses.</p>
+            <p className="text-sm text-gray-500">Please contact an administrator or wait for approval.</p>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Courses</h2>
+          <p className="text-gray-600">{errorMessage}</p>
+        </div>
+      </div>
     );
   }
 
