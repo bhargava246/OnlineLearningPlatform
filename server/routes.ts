@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertCourseSchema, insertTestSchema, insertTestResultSchema } from "@shared/schema";
 import { z } from "zod";
-import mongoRoutes from "./routes/mongoRoutes.js";
+import pgRoutes from "./routes/pgRoutes.js";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -18,13 +18,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       res.json({
-        id: user._id,
+        id: user.id,
         username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        profileImageUrl: user.profileImageUrl || user.avatar
+        profileImageUrl: user.avatar
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -32,8 +32,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add MongoDB routes with authentication
-  app.use('/api/mongo', isAuthenticated, mongoRoutes);
+  // Add PostgreSQL routes with authentication
+  app.use('/api/postgres', pgRoutes);
+  
+  // Legacy MongoDB routes (for backward compatibility during migration)
+  app.use('/api/mongo', isAuthenticated, pgRoutes);
   
   // Legacy routes (keeping for backward compatibility)
   // Auth routes
@@ -319,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mount MongoDB routes
-  app.use('/api/mongo', mongoRoutes);
+  // Removed legacy MongoDB routes
 
   const httpServer = createServer(app);
   return httpServer;
