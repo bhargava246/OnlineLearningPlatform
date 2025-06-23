@@ -46,7 +46,11 @@ export function useAuth() {
     queryFn: async () => {
       if (token) return null; // Skip if we have a token
       
-      const response = await fetch("/api/auth/user");
+      const response = await fetch("/api/mongo/auth/user", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (!response.ok) return null;
       return response.json();
     },

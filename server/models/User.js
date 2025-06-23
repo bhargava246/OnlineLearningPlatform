@@ -65,6 +65,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  enrolledCourses: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course'
+  }],
   approvedCourses: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course'

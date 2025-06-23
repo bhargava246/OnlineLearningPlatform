@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertCourseSchema, insertTestSchema, insertTestResultSchema } from "@shared/schema";
+// Using MongoDB models instead of shared schema
 import { z } from "zod";
 import mongoRoutes from "./routes/mongoRoutes.js";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
@@ -18,13 +18,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       res.json({
-        id: user.id,
+        id: user._id,
         username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        profileImageUrl: user.avatar
+        profileImageUrl: user.profileImageUrl || user.avatar,
+        isApproved: user.isApproved,
+        enrolledCourses: user.enrolledCourses || [],
+        isActive: user.isActive
       });
     } catch (error) {
       console.error("Error fetching user:", error);

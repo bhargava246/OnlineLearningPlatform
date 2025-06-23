@@ -4,10 +4,8 @@ import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
-// PostgreSQL integration for user authentication
-import { db } from './db.js';
-import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+// Import User model for MongoDB operations
+import User from './models/User.js';
 import MemoryStore from "memorystore";
 
 // Set default environment variables for local development
@@ -70,7 +68,7 @@ import User from './models/User.js';
 
 async function findUserByEmail(email: string) {
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate('enrolledCourses');
     return user;
   } catch (error) {
     console.error('Error finding user:', error);
