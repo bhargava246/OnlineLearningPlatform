@@ -17,7 +17,7 @@
 - [ ] Deploy and note the backend URL
 
 ### 2. Frontend Configuration
-- [ ] Run: `node scripts/prepare-deployment.js https://your-render-url.onrender.com`
+- [ ] Run: `node scripts/prepare-deployment.js https://onlinelearningplatform-ppes.onrender.com`
 - [ ] Verify vercel.json has correct backend URL
 - [ ] Verify queryClient.ts has correct API endpoint
 
@@ -28,14 +28,14 @@
   - [ ] Build command: `npm run build:frontend`
   - [ ] Output directory: `dist/public`
   - [ ] Install command: `npm install`
-- [ ] Set environment variable: `VITE_API_URL=https://your-render-url.onrender.com`
+- [ ] Set environment variable: `VITE_API_URL=https://onlinelearningplatform-ppes.onrender.com`
 - [ ] Deploy to: `online-learning-platform-puce-sigma.vercel.app`
 
 ## Post-Deployment Testing
 
 ### Backend Testing
-- [ ] Health check: `https://your-render-url.onrender.com/health` (if implemented)
-- [ ] API endpoints: `https://your-render-url.onrender.com/api/mongo/courses`
+- [ ] Health check: `https://onlinelearningplatform-ppes.onrender.com/health` (if implemented)
+- [ ] API endpoints: `https://onlinelearningplatform-ppes.onrender.com/api/mongo/courses`
 - [ ] CORS headers present for frontend domain
 
 ### Frontend Testing

@@ -12,7 +12,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "https://your-render-backend.onrender.com/api/$1"
+      "dest": "https://onlinelearningplatform-ppes.onrender.com/api/$1"
     },
     {
       "src": "/(.*)",
@@ -26,7 +26,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://your-render-backend.onrender.com/api/$1"
+      "destination": "https://onlinelearningplatform-ppes.onrender.com/api/$1"
     }
   ]
 }

@@ -8,7 +8,7 @@ async function throwIfResNotOk(res: Response) {
 }
 
 const API_BASE_URL = import.meta.env.PROD 
-  ? "https://your-render-backend.onrender.com" 
+  ? "https://onlinelearningplatform-ppes.onrender.com" 
   : "";
 
 export async function apiRequest(

@@ -11,8 +11,8 @@
 # 1. Install dependencies
 npm install
 
-# 2. Configure for deployment (replace with your actual Render URL)
-node scripts/prepare-deployment.js https://your-render-backend.onrender.com
+# 2. Configure for deployment
+node scripts/prepare-deployment.js https://onlinelearningplatform-ppes.onrender.com
 
 # 3. Build for production
 npm run build:prod
@@ -24,7 +24,7 @@ Create these environment variable files:
 
 ### Frontend (.env.production)
 ```env
-VITE_API_URL=https://your-render-backend.onrender.com
+VITE_API_URL=https://onlinelearningplatform-ppes.onrender.com
 ```
 
 ### Backend Environment Variables (for Render)
@@ -84,7 +84,7 @@ This script will:
    - Install Command: `npm install`
 
 4. **Set Environment Variables** in Vercel dashboard:
-   - `VITE_API_URL=https://your-render-backend.onrender.com`
+   - `VITE_API_URL=https://onlinelearningplatform-ppes.onrender.com`
 
 5. **Custom Domain**: Set up your domain `online-learning-platform-puce-sigma.vercel.app`
 
@@ -105,7 +105,7 @@ app.use(cors({
 
 ## Step 6: Test Deployment
 
-1. **Backend Health Check**: Visit `https://your-render-backend.onrender.com/health`
+1. **Backend Health Check**: Visit `https://onlinelearningplatform-ppes.onrender.com/health`
 2. **Frontend**: Visit `https://online-learning-platform-puce-sigma.vercel.app`
 3. **Test Authentication**: Try logging in/registering
 4. **Test Features**: Verify courses, tests, and admin features work
