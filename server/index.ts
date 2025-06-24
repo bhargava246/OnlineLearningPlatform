@@ -10,11 +10,14 @@ const app = express();
 app.use(cors({
   origin: [
     'https://online-learning-platform-puce-sigma.vercel.app',
+    'https://onlinelearningplatform-ppes.onrender.com',
     'http://localhost:3000',
     'http://localhost:5000',
     process.env.CORS_ORIGIN
   ].filter(Boolean),
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 
 app.use(express.json());

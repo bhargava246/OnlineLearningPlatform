@@ -7,8 +7,8 @@ import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-// JWT Secret (in production, use environment variable)
-const JWT_SECRET = 'your-secret-key';
+// JWT Secret from environment variable
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Admin middleware - works with JWT auth
 const requireAdmin = (req, res, next) => {
