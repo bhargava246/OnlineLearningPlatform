@@ -10,9 +10,9 @@ const router = express.Router();
 // JWT Secret (in production, use environment variable)
 const JWT_SECRET = 'your-secret-key';
 
-// Admin middleware - works with Replit auth
+// Admin middleware - works with JWT auth
 const requireAdmin = (req, res, next) => {
-  if (req.user?.dbUser?.role !== 'admin') {
+  if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
   }
   next();
@@ -42,7 +42,13 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid token. User not found.' });
     }
     
-    req.user = { ...decoded, dbUser: user };
+    // Set both formats for compatibility
+    req.user = { 
+      id: decoded.id, 
+      username: decoded.username, 
+      role: decoded.role,
+      dbUser: user 
+    };
     next();
   } catch (error) {
     res.status(400).json({ message: 'Invalid token.' });
@@ -703,7 +709,7 @@ router.get('/students/by-username/:username', async (req, res) => {
 });
 
 // Get student's own test results
-router.get('/student/my-results', async (req, res) => {
+router.get('/student/my-results', verifyToken, async (req, res) => {
   try {
     const currentUser = req.user?.dbUser;
     if (!currentUser || currentUser.role !== 'student') {
@@ -742,7 +748,7 @@ router.get('/student/my-results', async (req, res) => {
 });
 
 // Get all students with their test results for admin
-router.get('/admin/student-results', requireAdmin, async (req, res) => {
+router.get('/admin/student-results', verifyToken, requireAdmin, async (req, res) => {
   try {
     const students = await User.find({ role: 'student', isActive: true })
       .select('firstName lastName email');
@@ -779,7 +785,7 @@ router.get('/admin/student-results', requireAdmin, async (req, res) => {
 });
 
 // Admin: Get pending user approvals
-router.get('/admin/pending-approvals', requireAdmin, async (req, res) => {
+router.get('/admin/pending-approvals', verifyToken, requireAdmin, async (req, res) => {
   try {
     const pendingUsers = await User.find({ 
       isApproved: false,
@@ -905,16 +911,6 @@ router.get('/admin/users', verifyToken, requireAdmin, async (req, res) => {
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch users', error: error.message });
-  }
-});
-
-// Get pending approval requests (admin only)
-router.get('/admin/pending-approvals', verifyToken, requireAdmin, async (req, res) => {
-  try {
-    const pendingUsers = await User.find({ isApproved: false }).select('-password');
-    res.json(pendingUsers);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch pending approvals', error: error.message });
   }
 });
 
