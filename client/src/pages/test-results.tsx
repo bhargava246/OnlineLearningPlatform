@@ -15,6 +15,22 @@ export default function TestResults() {
   // Get test results based on user role
   const { data: testResults, isLoading } = useQuery<any[]>({
     queryKey: isAdmin ? ['/api/mongo/admin/student-results'] : ['/api/mongo/student/my-results'],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const endpoint = isAdmin ? '/api/mongo/admin/student-results' : '/api/mongo/student/my-results';
+      
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch test results');
+      }
+      
+      return response.json();
+    },
     enabled: !!user,
   });
 

@@ -49,7 +49,7 @@ export default function Admin() {
   });
 
   const { data: users, isLoading: usersLoading } = useQuery<any[]>({
-    queryKey: ["/api/mongo/users"],
+    queryKey: ["/api/mongo/admin/users"],
   });
 
   const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({

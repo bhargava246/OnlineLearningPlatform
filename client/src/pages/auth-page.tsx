@@ -81,7 +81,7 @@ export default function AuthPage() {
           description: "Welcome back!",
         });
         // Force page reload to ensure authentication state is updated
-        window.location.href = "/";
+        window.location.href = "/mycourses";
       } else {
         toast({
           title: "Login failed",
