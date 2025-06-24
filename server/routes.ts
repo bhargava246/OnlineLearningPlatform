@@ -35,12 +35,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add MongoDB routes (skip auth middleware for local development)
-  if (process.env.REPL_ID === 'local-development-id') {
-    app.use('/api/mongo', mongoRoutes);
-  } else {
-    app.use('/api/mongo', isAuthenticated, mongoRoutes);
-  }
+  // Add MongoDB routes - auth routes need to be accessible without middleware
+  app.use('/api/mongo', mongoRoutes);
   
   // Legacy routes (keeping for backward compatibility)
   // Auth routes
