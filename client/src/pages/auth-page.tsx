@@ -144,7 +144,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8 items-center min-h-screen">
           {/* Hero Section */}
@@ -153,53 +153,66 @@ export default function AuthPage() {
               <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
                 Transform Your Learning Journey
               </h1>
-              <p className="text-xl text-blue-100">
+              <p className="text-xl text-slate-300">
                 Join thousands of students and unlock your potential with our comprehensive learning platform.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                <BookOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <div className="flex items-center space-x-3 p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-sm">
+                <BookOpen className="h-8 w-8 text-violet-400" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Expert Courses</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Industry-leading content</p>
+                  <h3 className="font-semibold text-white">Expert Courses</h3>
+                  <p className="text-sm text-slate-300">Industry-leading content</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
+              <div className="flex items-center space-x-3 p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-sm">
+                <Users className="h-8 w-8 text-cyan-400" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Community</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Learn with peers</p>
+                  <h3 className="font-semibold text-white">Community</h3>
+                  <p className="text-sm text-slate-300">Learn with peers</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                <Trophy className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+              <div className="flex items-center space-x-3 p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-sm">
+                <Trophy className="h-8 w-8 text-yellow-400" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Certificates</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Earn recognition</p>
+                  <h3 className="font-semibold text-white">Certificates</h3>
+                  <p className="text-sm text-slate-300">Earn recognition</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                <Zap className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              <div className="flex items-center space-x-3 p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-sm">
+                <Zap className="h-8 w-8 text-purple-400" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Fast Track</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Accelerated learning</p>
+                  <h3 className="font-semibold text-white">Fast Track</h3>
+                  <p className="text-sm text-slate-300">Accelerated learning</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Authentication Forms */}
-          <div className="w-full max-w-md mx-auto">
-            <Card className="shadow-xl">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Welcome</CardTitle>
-                <CardDescription>
-                  Sign in to your account or create a new one
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+          <div className="w-full max-w-lg mx-auto">
+            <div className="relative">
+              {/* Background glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-3xl blur-xl"></div>
+              
+              {/* Main card */}
+              <Card className="relative bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/20"></div>
+                
+                <CardHeader className="relative text-center py-8 px-8">
+                  <div className="w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <BookOpen className="w-10 h-10 text-white" />
+                  </div>
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    Welcome
+                  </CardTitle>
+                  <CardDescription className="text-lg text-gray-600 mt-2">
+                    Continue your learning journey with us
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="relative px-8 pb-8">
                 {registrationMessage && (
                   <Alert className="mb-4">
                     <AlertDescription>{registrationMessage}</AlertDescription>
@@ -207,36 +220,46 @@ export default function AuthPage() {
                 )}
 
                 <Tabs defaultValue="login" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="login">Login</TabsTrigger>
-                    <TabsTrigger value="register">Register</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-100/80 backdrop-blur-sm p-1 rounded-2xl">
+                    <TabsTrigger value="login" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 font-medium">
+                      Sign In
+                    </TabsTrigger>
+                    <TabsTrigger value="register" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 font-medium">
+                      Register
+                    </TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="login" className="space-y-4">
                     <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="username">Username</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username</Label>
                         <Input
                           id="username"
                           type="text"
+                          placeholder="Enter your username"
+                          className="h-12 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-violet-400 focus:ring-violet-400/20 transition-all duration-200"
                           {...loginForm.register("username")}
                         />
                         {loginForm.formState.errors.username && (
-                          <p className="text-sm text-red-600">
+                          <p className="text-sm text-red-500 flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center text-xs">!</span>
                             {loginForm.formState.errors.username.message}
                           </p>
                         )}
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
                         <Input
                           id="password"
                           type="password"
+                          placeholder="Enter your password"
+                          className="h-12 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-violet-400 focus:ring-violet-400/20 transition-all duration-200"
                           {...loginForm.register("password")}
                         />
                         {loginForm.formState.errors.password && (
-                          <p className="text-sm text-red-600">
+                          <p className="text-sm text-red-500 flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center text-xs">!</span>
                             {loginForm.formState.errors.password.message}
                           </p>
                         )}
@@ -244,7 +267,7 @@ export default function AuthPage() {
 
                       <Button
                         type="submit"
-                        className="w-full"
+                        className="w-full h-12 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                         disabled={isSubmitting}
                       >
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -254,21 +277,22 @@ export default function AuthPage() {
 
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
+                        <span className="w-full border-t border-gray-200" />
                       </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                          Or continue with
+                      <div className="relative flex justify-center text-sm">
+                        <span className="bg-white px-4 text-gray-500 font-medium">
+                          OR CONTINUE WITH
                         </span>
                       </div>
                     </div>
 
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="w-full h-12 border-gray-200 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200"
                       onClick={handleReplitLogin}
                       disabled={isSubmitting}
                     >
+                      <BookOpen className="mr-2 h-5 w-5" />
                       Sign in with Replit
                     </Button>
                   </TabsContent>
@@ -364,6 +388,7 @@ export default function AuthPage() {
                 </Tabs>
               </CardContent>
             </Card>
+            </div>
           </div>
         </div>
       </div>
