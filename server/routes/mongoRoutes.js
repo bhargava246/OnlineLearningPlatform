@@ -207,9 +207,21 @@ router.post('/auth/login', async (req, res) => {
 });
 
 // Get current user (JWT authentication)
-router.get('/auth/user', verifyToken, async (req, res) => {
+router.get('/auth/user', async (req, res) => {
   try {
-    const user = req.user.dbUser;
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+    
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid token. User not found.' });
+    }
+    
     res.json({
       id: user._id,
       username: user.username,
@@ -222,6 +234,9 @@ router.get('/auth/user', verifyToken, async (req, res) => {
       approvedCourses: user.approvedCourses || []
     });
   } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
     res.status(500).json({ message: 'Failed to fetch user', error: error.message });
   }
 });

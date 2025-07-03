@@ -11,6 +11,8 @@ app.use(cors({
   origin: [
     'https://online-learning-platform-puce-sigma.vercel.app',
     'https://onlinelearningplatform-ppes.onrender.com',
+    'https://www.online.toolshelp.me',
+    'https://online.toolshelp.me',
     'http://localhost:3000',
     'http://localhost:5000',
     process.env.CORS_ORIGIN
