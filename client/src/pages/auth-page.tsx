@@ -144,16 +144,16 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800">
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8 items-center min-h-screen">
           {/* Hero Section */}
           <div className="space-y-6">
             <div className="space-y-4">
-              <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white leading-tight">
+              <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
                 Transform Your Learning Journey
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300">
+              <p className="text-xl text-blue-100">
                 Join thousands of students and unlock your potential with our comprehensive learning platform.
               </p>
             </div>
