@@ -11,37 +11,34 @@ import {
   GraduationCap, 
   Users, 
   Settings, 
-  MessageCircle, 
-  Video,
-  Bell,
-  Search,
-  MoreHorizontal,
   TrendingUp,
   Clock,
-  Award
+  Award,
+  MoreHorizontal
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import type { RecentActivity } from "@shared/schema";
 
-const sidebarItems = [
-  { icon: LayoutDashboard, label: "Dashboard", active: true },
-  { icon: BookOpen, label: "Grades" },
-  { icon: GraduationCap, label: "Class" },
-  { icon: Users, label: "Groups" },
-  { icon: Settings, label: "Administration" },
-  { icon: BookOpen, label: "Departments" },
-];
+const getSidebarItems = (userRole: string) => {
+  const baseItems = [
+    { icon: LayoutDashboard, label: "Dashboard", active: true, route: "/dashboard" },
+    { icon: BookOpen, label: "My Courses", route: "/courses" },
+    { icon: Award, label: "Test Results", route: "/test-results" },
+  ];
 
-const teamItems = [
-  { icon: MessageCircle, label: "Message", badge: true },
-  { icon: Video, label: "Call Meeting" },
-];
+  if (userRole === 'admin') {
+    baseItems.push({ icon: Settings, label: "Admin Panel", route: "/admin" });
+  }
+
+  return baseItems;
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const userId = user?.id;
+  const sidebarItems = getSidebarItems(user?.role || 'student');
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: [`/api/users/${userId}/stats`],
@@ -89,6 +86,7 @@ export default function Dashboard() {
             {sidebarItems.map((item, index) => (
               <li key={index}>
                 <button 
+                  onClick={() => setLocation(item.route)}
                   className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${
                     item.active 
                       ? 'bg-blue-800 text-white' 
@@ -101,22 +99,6 @@ export default function Dashboard() {
               </li>
             ))}
           </ul>
-
-          {/* Teams Section */}
-          <div className="mb-8">
-            <h3 className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-4">TEAMS</h3>
-            <ul className="space-y-2">
-              {teamItems.map((item, index) => (
-                <li key={index}>
-                  <button className="w-full flex items-center px-4 py-3 rounded-lg text-left text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
-                    <item.icon className="w-5 h-5 mr-3" />
-                    {item.label}
-                    {item.badge && <div className="w-2 h-2 bg-red-500 rounded-full ml-auto"></div>}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
         </nav>
 
         {/* Upgrade Section */}
@@ -137,25 +119,6 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm">Hello Ghazi, Welcome back 👋</p>
-              <h1 className="text-2xl font-bold text-gray-900">Your Dashboard today</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Settings className="w-5 h-5" />
-              </Button>
-              <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-            </div>
-          </div>
-        </header>
-
         <div className="p-8">
           {/* Hero Card */}
           <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white mb-8">
