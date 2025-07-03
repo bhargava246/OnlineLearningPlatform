@@ -40,11 +40,10 @@ function Router() {
       ) : (
         <>
           <Route path="/">
-            <div className="min-h-screen bg-gray-50">
-              <Header />
-              <Dashboard />
-              <Footer />
-            </div>
+            <Dashboard />
+          </Route>
+          <Route path="/dashboard">
+            <Dashboard />
           </Route>
           <Route path="/mycourses">
             <div className="min-h-screen bg-gray-50">
@@ -83,11 +82,7 @@ function Router() {
           </Route>
           {isAdmin && (
             <Route path="/admin">
-              <div className="min-h-screen bg-gray-50">
-                <Header />
-                <Admin />
-                <Footer />
-              </div>
+              <Admin />
             </Route>
           )}
         </>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import StatsCard from "@/components/stats-card";
@@ -48,12 +49,12 @@ export default function Admin() {
     queryKey: ["/api/mongo/admin/stats"],
   });
 
-  const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({
-    queryKey: ["/api/mongo/courses"],
+  const { data: users, isLoading: usersLoading } = useQuery<any[]>({
+    queryKey: ["/api/mongo/admin/users"],
   });
 
-  const { data: users, isLoading: usersLoading } = useQuery<User[]>({
-    queryKey: ["/api/mongo/admin/users"],
+  const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({
+    queryKey: ["/api/mongo/courses"],
   });
 
   const { data: tests, isLoading: testsLoading } = useQuery<any[]>({
@@ -301,126 +302,286 @@ export default function Admin() {
             </div>
           )}
 
+          {/* Courses Tab */}
+          {activeTab === "courses" && (
+            <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
+            <Button>
+              <i className="fas fa-plus mr-2"></i>
+              Add User
+            </Button>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {usersLoading ? (
+              <div className="p-6">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-16 mb-4" />
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        User
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users?.map((user) => (
+                      <tr key={user._id || user.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={user.avatar || ""} />
+                              <AvatarFallback>
+                                {user.firstName[0]}{user.lastName[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.firstName} {user.lastName}
+                              </div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                            {user.role}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant={user.isActive ? "default" : "secondary"}>
+                            {user.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <Button variant="ghost" size="sm" className="mr-3">
+                            Edit
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-600">
+                            {user.isActive ? "Suspend" : "Activate"}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          )}
+
           {/* Course Management Tab */}
           {activeTab === "courses" && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Course Management</h3>
-                <Dialog open={showCourseForm} onOpenChange={setShowCourseForm}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Course
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                    <DialogTitle>{editingCourse ? 'Edit Course' : 'Create New Course'}</DialogTitle>
-                    <DialogDescription>
-                      {editingCourse ? 'Update course information and content' : 'Fill in the details to create a new course'}
-                    </DialogDescription>
-                    <CourseForm 
-                      course={editingCourse}
-                      onSuccess={() => {
-                        setShowCourseForm(false);
-                        setEditingCourse(null);
-                      }}
-                      onCancel={() => {
-                        setShowCourseForm(false);
-                        setEditingCourse(null);
-                      }}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">Course Management</h3>
+            <Dialog open={showCourseForm} onOpenChange={setShowCourseForm}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Course
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <DialogTitle>{editingCourse ? 'Edit Course' : 'Create New Course'}</DialogTitle>
+                <DialogDescription>
+                  {editingCourse ? 'Update course information and content' : 'Fill in the details to create a new course'}
+                </DialogDescription>
+                <CourseForm 
+                  course={editingCourse}
+                  onSuccess={() => {
+                    setShowCourseForm(false);
+                    setEditingCourse(null);
+                  }}
+                  onCancel={() => {
+                    setShowCourseForm(false);
+                    setEditingCourse(null);
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
 
-              <Card>
-                <CardContent className="p-6">
-                  {coursesLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {[...Array(6)].map((_, i) => (
-                        <Skeleton key={i} className="h-64" />
-                      ))}
-                    </div>
-                  ) : courses && courses.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {courses.map((course) => (
-                        <div key={course._id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="aspect-video bg-gray-100 rounded-lg mb-4 overflow-hidden">
-                            {course.thumbnail ? (
-                              <img 
-                                src={course.thumbnail} 
-                                alt={course.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex items-center justify-center h-full text-gray-400">
-                                <BookOpen className="w-12 h-12" />
-                              </div>
-                            )}
-                          </div>
-                          <h4 className="font-semibold text-gray-900 mb-2">{course.title}</h4>
-                          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{course.description}</p>
-                          <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                            <span className="flex items-center">
-                              <Youtube className="w-4 h-4 mr-1" />
-                              {course.modules?.length || 0} modules
-                            </span>
-                            <span className="flex items-center">
-                              <FileText className="w-4 h-4 mr-1" />
-                              {course.notes?.length || 0} notes
-                            </span>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleEditCourse(course)}
-                              className="flex-1"
+          {coursesLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-64" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {courses?.map((course: any) => (
+                <div key={course._id || course.id} className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h4 className="text-lg font-semibold text-gray-900">{course.title}</h4>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEditCourse(course)}
+                        title="Edit Course"
+                      >
+                        <Edit className="h-4 w-4 text-gray-400" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            title="Delete Course"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-400" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{course.title}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteCourse(course._id || course.id)}
+                              className="bg-red-600 hover:bg-red-700"
                             >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Course</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{course.title}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => handleDeleteCourse(course._id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                      ))}
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Courses Found</h3>
-                      <p className="text-gray-500 mb-4">Create your first course to get started</p>
-                      <Button onClick={() => setShowCourseForm(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Course
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p><span className="font-medium">Category:</span> {course.category}</p>
+                    <p><span className="font-medium">Level:</span> {course.level}</p>
+                    <p className="flex items-center gap-1">
+                      <Youtube className="h-3 w-3" />
+                      <span className="font-medium">Videos:</span> {course.modules?.length || 0} lectures
+                    </p>
+                    <p className="flex items-center gap-1">
+                      <FileText className="h-3 w-3" />
+                      <span className="font-medium">Notes:</span> {course.notes?.length || 0} PDFs
+                    </p>
+                    <p><span className="font-medium">Duration:</span> {Math.floor((course.duration || 0) / 60)} hours</p>
+                    <p>
+                      <span className="font-medium">Status:</span>{" "}
+                      <span className="text-green-600">
+                        {course.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </p>
+                    {course.price > 0 && (
+                      <p><span className="font-medium">Price:</span> ${course.price}</p>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <Button variant="ghost" size="sm">
+                      <Edit className="h-3 w-3 mr-1" />
+                      Manage Content
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+            </div>
+          )}
+
+
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">Test Management</h3>
+            <Dialog open={showTestForm} onOpenChange={setShowTestForm}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Test
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <TestForm 
+                  onSuccess={() => setShowTestForm(false)}
+                  onCancel={() => setShowTestForm(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Existing Tests */}
+          {testsLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </div>
+          ) : tests && tests.length > 0 ? (
+            <div className="space-y-4">
+              {tests.map((test: any) => (
+                <div key={test._id || test.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">{test.title}</h4>
+                      <p className="text-gray-600 mb-4">{test.description}</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">Course:</span>
+                          <p className="text-gray-600">{test.course?.title || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Questions:</span>
+                          <p className="text-gray-600">{test.questions?.length || 0}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Time Limit:</span>
+                          <p className="text-gray-600">{test.timeLimit || 60} minutes</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Passing Score:</span>
+                          <p className="text-gray-600">{test.passingScore || 60}%</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="ghost" size="icon" title="Edit Test">
+                        <Edit className="h-4 w-4 text-gray-400" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Delete Test">
+                        <Trash2 className="h-4 w-4 text-red-400" />
                       </Button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="text-center py-8 text-gray-500">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Tests Found</h3>
+                <p className="text-gray-500 mb-4">Create tests for your courses to assess student learning</p>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowTestForm(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Test
+                </Button>
+              </div>
             </div>
           )}
 
