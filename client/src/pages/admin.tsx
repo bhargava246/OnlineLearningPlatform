@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -15,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getGradeColor } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen } from "lucide-react";
+import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen, BarChart3, Target, TrendingUp } from "lucide-react";
 import type { User, Course, TestResult } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -114,80 +115,97 @@ export default function Admin() {
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Admin Dashboard</h2>
-        <p className="text-gray-600 mt-1">Manage users, courses, and analytics</p>
-      </div>
-
-      {/* Admin Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="approvals">User Approvals</TabsTrigger>
-          <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="courses">Course Management</TabsTrigger>
-          <TabsTrigger value="tests">Test Management</TabsTrigger>
-          <TabsTrigger value="grades">Student Grades</TabsTrigger>
-        </TabsList>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <i className="fas fa-users text-2xl text-blue-600"></i>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-blue-600">Total Users</p>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {adminStats?.totalUsers || 0}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <i className="fas fa-graduation-cap text-2xl text-green-600"></i>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-green-600">Active Courses</p>
-                  <p className="text-2xl font-bold text-green-900">
-                    {adminStats?.activeCourses || 0}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <i className="fas fa-clipboard-check text-2xl text-purple-600"></i>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-purple-600">Tests Completed</p>
-                  <p className="text-2xl font-bold text-purple-900">
-                    {adminStats?.testsCompleted || 0}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <i className="fas fa-chart-line text-2xl text-yellow-600"></i>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-yellow-600">Avg. Score</p>
-                  <p className="text-2xl font-bold text-yellow-900">
-                    {adminStats?.averageScore ? `${adminStats.averageScore}%` : "0%"}
-                  </p>
-                </div>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 -right-32 w-64 h-64 bg-yellow-400 rounded-full opacity-20 animate-pulse"></div>
+          <div className="absolute bottom-1/4 -left-32 w-96 h-96 bg-indigo-400 rounded-full opacity-10"></div>
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center text-white">
+            <h1 className="text-4xl lg:text-5xl font-bold mb-4">
+              Admin <span className="underline decoration-yellow-400">Control Center</span>
+            </h1>
+            <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
+              Manage your learning platform with comprehensive analytics and user management tools
+            </p>
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-12">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-6 text-center">
+                  <Users className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                  <div className="text-3xl font-bold text-white mb-2">{adminStats?.totalUsers || 0}</div>
+                  <p className="text-indigo-100">Total Users</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-6 text-center">
+                  <BookOpen className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                  <div className="text-3xl font-bold text-white mb-2">{adminStats?.activeCourses || 0}</div>
+                  <p className="text-indigo-100">Active Courses</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-6 text-center">
+                  <Target className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                  <div className="text-3xl font-bold text-white mb-2">{adminStats?.testsCompleted || 0}</div>
+                  <p className="text-indigo-100">Tests Completed</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-6 text-center">
+                  <TrendingUp className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+                  <div className="text-3xl font-bold text-white mb-2">{adminStats?.averageScore ? `${adminStats.averageScore}%` : "0%"}</div>
+                  <p className="text-indigo-100">Avg Score</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        {/* Management Tabs */}
+        <Card className="shadow-lg border-0">
+          <CardContent className="p-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+                <TabsList className="w-full h-16 bg-transparent justify-start rounded-none border-0">
+                  <TabsTrigger value="analytics" className="data-[state=active]:bg-white data-[state=active]:shadow-md px-6 py-3 m-1 rounded-lg">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Analytics
+                  </TabsTrigger>
+                  <TabsTrigger value="approvals" className="data-[state=active]:bg-white data-[state=active]:shadow-md px-6 py-3 m-1 rounded-lg">
+                    <Users className="w-4 h-4 mr-2" />
+                    User Approvals
+                  </TabsTrigger>
+                  <TabsTrigger value="users" className="data-[state=active]:bg-white data-[state=active]:shadow-md px-6 py-3 m-1 rounded-lg">
+                    User Management
+                  </TabsTrigger>
+                  <TabsTrigger value="courses" className="data-[state=active]:bg-white data-[state=active]:shadow-md px-6 py-3 m-1 rounded-lg">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Courses
+                  </TabsTrigger>
+                  <TabsTrigger value="tests" className="data-[state=active]:bg-white data-[state=active]:shadow-md px-6 py-3 m-1 rounded-lg">
+                    Tests
+                  </TabsTrigger>
+                  <TabsTrigger value="grades" className="data-[state=active]:bg-white data-[state=active]:shadow-md px-6 py-3 m-1 rounded-lg">
+                    <Award className="w-4 h-4 mr-2" />
+                    Grades
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* Analytics Tab */}
+              <TabsContent value="analytics" className="p-8 space-y-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Platform Analytics</h3>
+                  <p className="text-gray-600 mb-8">Comprehensive insights into your learning platform performance</p>
+                </div>
 
           {/* Charts Placeholder */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

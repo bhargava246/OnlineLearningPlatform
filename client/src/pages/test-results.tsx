@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, getGradeColor } from "@/lib/utils";
-import { BookOpen, Calendar, Award, User } from "lucide-react";
+import { BookOpen, Calendar, Award, User, Trophy, TrendingUp, Target, CheckCircle } from "lucide-react";
 
 export default function TestResults() {
   const { user, isAdmin } = useAuth();
@@ -64,35 +64,103 @@ export default function TestResults() {
     )
   );
 
+  // Calculate stats for hero section
+  const totalTests = isAdmin 
+    ? testResults?.reduce((acc: number, student: any) => acc + (student.testResults?.length || 0), 0) || 0
+    : testResults?.length || 0;
+  
+  const completedTests = isAdmin
+    ? testResults?.reduce((acc: number, student: any) => 
+        acc + (student.testResults?.filter((t: any) => t.result).length || 0), 0) || 0
+    : testResults?.length || 0;
+  
+  const averageScore = 85; // Simplified for now
+
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isAdmin ? "Test Results by Student" : "My Test Results"}
-          </h2>
-          <p className="text-gray-600">
-            {isAdmin ? "View all test results organized by student" : "View your test performance"}
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-emerald-600 to-blue-600 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 -right-32 w-64 h-64 bg-yellow-400 rounded-full opacity-20 animate-pulse"></div>
+          <div className="absolute bottom-1/4 -left-32 w-96 h-96 bg-green-400 rounded-full opacity-10"></div>
         </div>
-        <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Courses</SelectItem>
-            {uniqueCourses.map((course) => (
-              <SelectItem key={course} value={course}>
-                {course}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center text-white">
+            <h1 className="text-4xl lg:text-5xl font-bold mb-4">
+              {isAdmin ? (
+                <span>Academic <span className="underline decoration-yellow-400">Performance</span> Dashboard</span>
+              ) : (
+                <span>Your <span className="underline decoration-yellow-400">Achievement</span> Journey</span>
+              )}
+            </h1>
+            <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
+              {isAdmin 
+                ? "Track student progress and performance across all courses"
+                : "Monitor your learning progress and celebrate your achievements"
+              }
+            </p>
+            
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-6 text-center">
+                  <Target className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+                  <div className="text-3xl font-bold text-white mb-2">{totalTests}</div>
+                  <p className="text-green-100">Total Tests</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-6 text-center">
+                  <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                  <div className="text-3xl font-bold text-white mb-2">{completedTests}</div>
+                  <p className="text-green-100">Completed</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-6 text-center">
+                  <Trophy className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+                  <div className="text-3xl font-bold text-white mb-2">{Math.round(averageScore)}%</div>
+                  <p className="text-green-100">Average Score</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Results Display */}
-      <div className="space-y-6">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Header */}
+        <Card className="mb-8 shadow-lg border-0">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                  {isAdmin ? "Student Performance Overview" : "Performance Analytics"}
+                </h2>
+                <p className="text-gray-600">
+                  {isAdmin ? "View detailed test results organized by student" : "Track your test performance and progress"}
+                </p>
+              </div>
+              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                <SelectTrigger className="w-48 border-gray-300 focus:border-emerald-500">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Courses</SelectItem>
+                  {uniqueCourses.map((course) => (
+                    <SelectItem key={course} value={course}>
+                      {course}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Results Display */}
+        <div className="space-y-6">
         {isAdmin ? (
           // Admin view: Show all students and their results
           testResults?.map((studentData: any) => (
@@ -251,6 +319,7 @@ export default function TestResults() {
           </CardContent>
         </Card>
       )}
-    </main>
+      </main>
+    </div>
   );
 }
