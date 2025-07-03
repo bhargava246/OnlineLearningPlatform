@@ -527,6 +527,9 @@ export default function Admin() {
           <StudentGrades />
         </TabsContent>
       </Tabs>
+      </CardContent>
+    </Card>
     </main>
+    </div>
   );
 }
