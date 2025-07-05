@@ -29,7 +29,7 @@ export default function Landing() {
 
       {/* Header Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 backdrop-blur-sm bg-white/5 border-b border-white/10">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setLocation('/')}>
           <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <GraduationCap className="w-7 h-7 text-white" />
           </div>
@@ -37,12 +37,6 @@ export default function Landing() {
             <span className="text-white font-bold text-xl">EduPlatform</span>
             <span className="text-purple-300 text-xs">Learn. Grow. Succeed.</span>
           </div>
-        </div>
-        <div className="hidden md:flex items-center space-x-8 text-white">
-          <span className="cursor-pointer hover:text-purple-300 transition-colors duration-200 font-medium">Home</span>
-          <span className="cursor-pointer hover:text-purple-300 transition-colors duration-200 font-medium">Courses</span>
-          <span className="cursor-pointer hover:text-purple-300 transition-colors duration-200 font-medium">Pricing</span>
-          <span className="cursor-pointer hover:text-purple-300 transition-colors duration-200 font-medium">About</span>
         </div>
         <div className="flex items-center space-x-4">
           <Button 
@@ -92,14 +86,6 @@ export default function Landing() {
               >
                 <Rocket className="mr-2 h-5 w-5" />
                 Start Learning Now
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm px-8 py-6 text-lg rounded-2xl transition-all duration-200"
-              >
-                <Play className="mr-2 h-5 w-5" />
-                Watch Demo
               </Button>
             </div>
 
@@ -179,7 +165,7 @@ export default function Landing() {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10">
+            <Card className="bg-gradient-to-br from-violet-500/20 to-purple-600/20 backdrop-blur-sm border border-violet-300/30 hover:bg-violet-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Brain className="h-8 w-8 text-white" />
@@ -191,7 +177,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10">
+            <Card className="bg-gradient-to-br from-cyan-500/20 to-blue-600/20 backdrop-blur-sm border border-cyan-300/30 hover:bg-cyan-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/20">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Clock className="h-8 w-8 text-white" />
@@ -203,7 +189,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
+            <Card className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm border border-green-300/30 hover:bg-green-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/20">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Award className="h-8 w-8 text-white" />
@@ -215,7 +201,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-300 hover:shadow-xl hover:shadow-yellow-500/10">
+            <Card className="bg-gradient-to-br from-yellow-500/20 to-orange-600/20 backdrop-blur-sm border border-yellow-300/30 hover:bg-yellow-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-yellow-500/20">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Users className="h-8 w-8 text-white" />
@@ -227,7 +213,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-300 hover:shadow-xl hover:shadow-pink-500/10">
+            <Card className="bg-gradient-to-br from-pink-500/20 to-rose-600/20 backdrop-blur-sm border border-pink-300/30 hover:bg-pink-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-pink-500/20">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Shield className="h-8 w-8 text-white" />
@@ -239,7 +225,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10">
+            <Card className="bg-gradient-to-br from-purple-500/20 to-indigo-600/20 backdrop-blur-sm border border-purple-300/30 hover:bg-purple-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Globe className="h-8 w-8 text-white" />
@@ -268,14 +254,6 @@ export default function Landing() {
               >
                 <Rocket className="mr-2 h-5 w-5" />
                 Start Your Free Trial
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm px-8 py-6 text-lg rounded-2xl transition-all duration-200"
-              >
-                <ChevronRight className="mr-2 h-5 w-5" />
-                View Course Catalog
               </Button>
             </div>
           </div>

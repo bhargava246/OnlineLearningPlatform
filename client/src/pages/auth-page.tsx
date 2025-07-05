@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import { Loader2, BookOpen, Users, Trophy, Zap } from "lucide-react";
+import { Loader2, BookOpen, Users, Trophy, Zap, GraduationCap } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -81,7 +81,7 @@ export default function AuthPage() {
           description: "Welcome back!",
         });
         // Force page reload to ensure authentication state is updated
-        window.location.href = "/mycourses";
+        window.location.href = "/dashboard";
       } else {
         toast({
           title: "Login failed",
@@ -139,12 +139,30 @@ export default function AuthPage() {
     }
   };
 
-  const handleReplitLogin = () => {
-    window.location.href = "/api/login";
+  const handleGoogleLogin = () => {
+    // For now, show a toast that Google login is not yet implemented
+    toast({
+      title: "Google Login",
+      description: "Google login integration coming soon! Please use email/password for now.",
+      variant: "default",
+    });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header with Logo */}
+      <header className="absolute top-0 left-0 right-0 z-10 p-8">
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setLocation('/')}>
+          <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <GraduationCap className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-white font-bold text-xl">EduPlatform</span>
+            <span className="text-purple-300 text-xs">Learn. Grow. Succeed.</span>
+          </div>
+        </div>
+      </header>
+      
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8 items-center min-h-screen">
           {/* Hero Section */}
@@ -289,11 +307,16 @@ export default function AuthPage() {
                     <Button
                       variant="outline"
                       className="w-full h-12 border-gray-200 hover:bg-gray-50 rounded-xl font-medium transition-all duration-200"
-                      onClick={handleReplitLogin}
+                      onClick={handleGoogleLogin}
                       disabled={isSubmitting}
                     >
-                      <BookOpen className="mr-2 h-5 w-5" />
-                      Sign in with Replit
+                      <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      Sign in with Google
                     </Button>
                   </TabsContent>
 
@@ -373,7 +396,7 @@ export default function AuthPage() {
 
                       <Button
                         type="submit"
-                        className="w-full"
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
                         disabled={isSubmitting}
                       >
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

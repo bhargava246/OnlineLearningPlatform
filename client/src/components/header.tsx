@@ -32,7 +32,7 @@ export default function Header() {
     if (token) {
       // Email/password logout
       localStorage.removeItem("token");
-      window.location.href = '/auth';
+      window.location.href = '/';
     } else {
       // Replit logout
       window.location.href = '/api/logout';

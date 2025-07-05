@@ -5,40 +5,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import Sidebar from "@/components/sidebar";
 import { 
-  LayoutDashboard, 
-  BookOpen, 
-  GraduationCap, 
   Users, 
-  Settings, 
-  TrendingUp,
   Clock,
-  Award,
-  MoreHorizontal
+  MoreHorizontal,
+  BookOpen
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import type { RecentActivity } from "@shared/schema";
 
-const getSidebarItems = (userRole: string) => {
-  const baseItems = [
-    { icon: LayoutDashboard, label: "Dashboard", active: true, route: "/dashboard" },
-    { icon: BookOpen, label: "My Courses", route: "/courses" },
-    { icon: Award, label: "Test Results", route: "/test-results" },
-  ];
 
-  if (userRole === 'admin') {
-    baseItems.push({ icon: Settings, label: "Admin Panel", route: "/admin" });
-  }
-
-  return baseItems;
-};
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const userId = user?.id;
-  const sidebarItems = getSidebarItems(user?.role || 'student');
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: [`/api/users/${userId}/stats`],
@@ -51,9 +34,7 @@ export default function Dashboard() {
   if (statsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex">
-        <div className="w-64 bg-blue-900 text-white p-6">
-          <Skeleton className="h-8 w-32 mb-8 bg-blue-800" />
-        </div>
+        <Sidebar />
         <main className="flex-1 p-8">
           <Skeleton className="h-8 w-96 mb-6" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -68,72 +49,28 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-blue-900 text-white flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-blue-800">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-blue-900" />
-            </div>
-            <span className="font-bold text-lg">EduPlatform</span>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6">
-          <ul className="space-y-2 mb-8">
-            {sidebarItems.map((item, index) => (
-              <li key={index}>
-                <button 
-                  onClick={() => setLocation(item.route)}
-                  className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${
-                    item.active 
-                      ? 'bg-blue-800 text-white' 
-                      : 'text-blue-100 hover:bg-blue-800 hover:text-white'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5 mr-3" />
-                  {item.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Upgrade Section */}
-        <div className="p-4">
-          <Card className="bg-blue-800 border-blue-700 text-white">
-            <CardContent className="p-4 text-center">
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
-                <TrendingUp className="w-4 h-4 text-blue-900" />
-              </div>
-              <p className="text-sm font-medium mb-3">Upgrade to Pro for more feature</p>
-              <Button variant="secondary" size="sm" className="w-full">
-                Upgrade
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </aside>
+      <Sidebar />
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="p-8">
-          {/* Hero Card */}
+          {/* Welcome Section */}
           <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white mb-8">
             <CardContent className="p-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Creative outdoor ads</h2>
+                  <h2 className="text-2xl font-bold mb-2">Welcome back, {user?.firstName}!</h2>
                   <p className="text-blue-100 max-w-md">
-                    Every large design eventually whether it's a multi-regional 
-                    branding corporation or a regular down as hard tetty magazine 
-                    publisher needs to fit holes in the workforce.
+                    Continue your learning journey and achieve your educational goals. 
+                    Track your progress and explore new courses.
                   </p>
                 </div>
-                <Button variant="secondary" className="bg-white text-blue-600 hover:bg-blue-50">
-                  Get started
+                <Button 
+                  variant="secondary" 
+                  className="bg-white text-blue-600 hover:bg-blue-50"
+                  onClick={() => setLocation('/courses')}
+                >
+                  View Courses
                 </Button>
               </div>
             </CardContent>
