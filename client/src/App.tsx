@@ -46,39 +46,19 @@ function Router() {
             <Dashboard />
           </Route>
           <Route path="/mycourses">
-            <div className="min-h-screen bg-gray-50">
-              <Header />
-              <Courses />
-              <Footer />
-            </div>
+            <Courses />
           </Route>
           <Route path="/courses">
-            <div className="min-h-screen bg-gray-50">
-              <Header />
-              <Courses />
-              <Footer />
-            </div>
+            <Courses />
           </Route>
           <Route path="/courses/:id">
-            <div className="min-h-screen bg-gray-50">
-              <Header />
-              <CourseDetail />
-              <Footer />
-            </div>
+            <CourseDetail />
           </Route>
           <Route path="/video/:courseId/:moduleId">
-            <div className="min-h-screen bg-gray-50">
-              <Header />
-              <VideoPlayer />
-              <Footer />
-            </div>
+            <VideoPlayer />
           </Route>
           <Route path="/test-results">
-            <div className="min-h-screen bg-gray-50">
-              <Header />
-              <TestResults />
-              <Footer />
-            </div>
+            <TestResults />
           </Route>
           {isAdmin && (
             <Route path="/admin">

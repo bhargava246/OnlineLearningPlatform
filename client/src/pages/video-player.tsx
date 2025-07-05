@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Play, Clock, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import Sidebar from "@/components/sidebar";
 
 export default function VideoPlayer() {
   const [match, params] = useRoute("/video/:courseId/:moduleId");
@@ -15,16 +16,19 @@ export default function VideoPlayer() {
 
   if (!match || !params) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Video Not Found</h2>
-          <p className="text-gray-600 mt-2">The requested video could not be found.</p>
-          <Link href="/courses">
-            <Button className="mt-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Courses
-            </Button>
-          </Link>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900">Video Not Found</h2>
+            <p className="text-gray-600 mt-2">The requested video could not be found.</p>
+            <Link href="/courses">
+              <Button className="mt-4">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Courses
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -32,8 +36,9 @@ export default function VideoPlayer() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar />
+        <main className="flex-1 p-8">
           <Skeleton className="h-8 w-64 mb-6" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
@@ -45,7 +50,7 @@ export default function VideoPlayer() {
               <Skeleton className="h-64 w-full" />
             </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -54,16 +59,19 @@ export default function VideoPlayer() {
   
   if (!module) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Module Not Found</h2>
-          <p className="text-gray-600 mt-2">The requested video module could not be found.</p>
-          <Link href={`/courses/${params.courseId}`}>
-            <Button className="mt-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Course
-            </Button>
-          </Link>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900">Module Not Found</h2>
+            <p className="text-gray-600 mt-2">The requested video module could not be found.</p>
+            <Link href={`/courses/${params.courseId}`}>
+              <Button className="mt-4">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Course
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -79,8 +87,9 @@ export default function VideoPlayer() {
   const videoId = getYouTubeVideoId(module.youtubeUrl);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar />
+      <main className="flex-1 p-8">
         {/* Navigation */}
         <div className="mb-6">
           <Link href={`/courses/${params.courseId}`}>
@@ -176,7 +185,7 @@ export default function VideoPlayer() {
             </Card>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

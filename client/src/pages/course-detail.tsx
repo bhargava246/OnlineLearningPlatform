@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import PdfViewer from "@/components/pdf-viewer";
 import { Skeleton } from "@/components/ui/skeleton";
+import Sidebar from "@/components/sidebar";
 import type { Course, CourseModule, CourseNote } from "@shared/schema";
 
 export default function CourseDetail() {
@@ -36,28 +37,31 @@ export default function CourseDetail() {
 
   if (courseLoading || modulesLoading || notesLoading) {
     return (
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <Skeleton className="h-8 w-96 mb-2" />
-                <Skeleton className="h-6 w-48" />
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <Skeleton className="h-8 w-96 mb-2" />
+                  <Skeleton className="h-6 w-48" />
+                </div>
+                <Skeleton className="h-6 w-6" />
               </div>
-              <Skeleton className="h-6 w-6" />
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <Skeleton className="aspect-video mb-6" />
-                <Skeleton className="h-32" />
-              </div>
-              <div className="lg:col-span-1">
-                <Skeleton className="h-64" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                  <Skeleton className="aspect-video mb-6" />
+                  <Skeleton className="h-32" />
+                </div>
+                <div className="lg:col-span-1">
+                  <Skeleton className="h-64" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
@@ -65,24 +69,30 @@ export default function CourseDetail() {
     const errorMessage = error.message;
     if (errorMessage.includes('not enrolled')) {
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center p-8">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-8 h-8 text-red-600" />
+        <div className="min-h-screen bg-gray-50 flex">
+          <Sidebar />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center p-8">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-8 h-8 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+              <p className="text-gray-600 mb-4">You are not enrolled in this course.</p>
+              <p className="text-sm text-gray-500">Please contact an administrator for course access.</p>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600 mb-4">You are not enrolled in this course.</p>
-            <p className="text-sm text-gray-500">Please contact an administrator for course access.</p>
           </div>
         </div>
       );
     }
     
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Course</h2>
-          <p className="text-gray-600">{errorMessage}</p>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Course</h2>
+            <p className="text-gray-600">{errorMessage}</p>
+          </div>
         </div>
       </div>
     );
@@ -90,19 +100,24 @@ export default function CourseDetail() {
 
   if (!course) {
     return (
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Course not found</h2>
-          <p className="text-gray-500">The course you're looking for doesn't exist.</p>
-        </div>
-      </main>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Course not found</h2>
+            <p className="text-gray-500">The course you're looking for doesn't exist.</p>
+          </div>
+        </main>
+      </div>
     );
   }
 
   const currentModule = modules?.length > 0 ? modules[0] : null;
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar />
+      <main className="flex-1 p-8">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-8">
           <div className="flex items-center justify-between mb-6">
@@ -226,6 +241,7 @@ export default function CourseDetail() {
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </div>
   );
 }
