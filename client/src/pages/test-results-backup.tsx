@@ -126,6 +126,7 @@ export default function TestResults() {
               </Card>
             </div>
           </div>
+          </div>
         </div>
         
         {/* Main Content */}

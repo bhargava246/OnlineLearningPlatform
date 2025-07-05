@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getGradeColor } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
+import Sidebar from "@/components/sidebar";
 import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen, BarChart3, Target, TrendingUp, GraduationCap } from "lucide-react";
 import type { User, Course, TestResult } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -99,24 +100,103 @@ export default function Admin() {
 
   if (statsLoading && activeTab === "analytics") {
     return (
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-6 w-64" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-      </main>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          <div className="mb-6">
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-6 w-64" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
+        </main>
+      </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-blue-900 text-white flex flex-col">
+      <Sidebar />
+      <main className="flex-1 flex flex-col">
+        {/* Admin Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+          <p className="text-gray-600">Manage users, courses, and system settings</p>
+        </div>
+        
+        {/* Tab Navigation */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="px-6">
+            <nav className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab("analytics")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "analytics"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Analytics
+              </button>
+              <button
+                onClick={() => setActiveTab("approvals")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "approvals"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                User Approvals
+              </button>
+              <button
+                onClick={() => setActiveTab("users")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "users"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                User Management
+              </button>
+              <button
+                onClick={() => setActiveTab("courses")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "courses"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Courses
+              </button>
+              <button
+                onClick={() => setActiveTab("tests")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "tests"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Tests
+              </button>
+              <button
+                onClick={() => setActiveTab("grading")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "grading"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Grading
+              </button>
+            </nav>
+          </div>
+        </div>
+        
+        {/* Content Area */}
+        <div className="flex-1 overflow-auto p-6">
         {/* Logo */}
         <div className="p-6 border-b border-blue-800">
           <div className="flex items-center space-x-2">
