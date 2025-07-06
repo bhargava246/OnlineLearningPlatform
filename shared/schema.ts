@@ -1,149 +1,157 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  role: text("role").notNull().default("student"), // student, instructor, admin
-  avatar: text("avatar"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+// MongoDB schema definitions using Zod
+export const userSchema = z.object({
+  _id: z.string().optional(),
+  username: z.string(),
+  email: z.string().email(),
+  password: z.string(),
+  role: z.enum(["buyer", "seller", "admin"]).default("buyer"),
+  createdAt: z.date().optional(),
 });
 
-export const courses = pgTable("courses", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  category: text("category").notNull(),
-  thumbnail: text("thumbnail").notNull(),
-  duration: integer("duration").notNull(), // in hours
-  videoCount: integer("video_count").notNull(),
-  instructorId: integer("instructor_id").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+export const dealerSchema = z.object({
+  _id: z.string().optional(),
+  name: z.string(),
+  location: z.string(),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  address: z.string().optional(),
+  rating: z.string().default("0.00"),
+  reviewCount: z.number().default(0),
+  verified: z.boolean().default(false),
+  userId: z.string().optional(),
+  createdAt: z.date().optional(),
 });
 
-export const courseModules = pgTable("course_modules", {
-  id: serial("id").primaryKey(),
-  courseId: integer("course_id").notNull(),
-  title: text("title").notNull(),
-  description: text("description"),
-  videoUrl: text("video_url"),
-  duration: integer("duration").notNull(), // in minutes
-  orderIndex: integer("order_index").notNull(),
-  isCompleted: boolean("is_completed").default(false),
+export const carSchema = z.object({
+  _id: z.string().optional(),
+  make: z.string(),
+  model: z.string(),
+  year: z.number(),
+  price: z.string(),
+  mileage: z.number(),
+  fuelType: z.enum(["gasoline", "electric", "hybrid", "diesel"]),
+  transmission: z.enum(["automatic", "manual", "cvt"]),
+  bodyType: z.enum(["sedan", "suv", "hatchback", "convertible", "pickup", "coupe"]),
+  drivetrain: z.enum(["fwd", "rwd", "awd", "4wd"]),
+  engine: z.string().optional(),
+  horsepower: z.number().optional(),
+  mpgCity: z.number().optional(),
+  mpgHighway: z.number().optional(),
+  safetyRating: z.number().min(1).max(5).optional(),
+  color: z.string().optional(),
+  vin: z.string().optional(),
+  condition: z.enum(["new", "used", "certified"]).default("used"),
+  features: z.array(z.string()).default([]),
+  imageUrls: z.array(z.string()).default([]),
+  description: z.string().optional(),
+  dealerId: z.string(),
+  available: z.boolean().default(true),
+  createdAt: z.date().optional(),
 });
 
-export const courseNotes = pgTable("course_notes", {
-  id: serial("id").primaryKey(),
-  courseId: integer("course_id").notNull(),
-  title: text("title").notNull(),
-  fileName: text("file_name").notNull(),
-  fileSize: text("file_size").notNull(),
-  downloadUrl: text("download_url").notNull(),
+export const reviewSchema = z.object({
+  _id: z.string().optional(),
+  userId: z.string(),
+  dealerId: z.string().optional(),
+  carId: z.string().optional(),
+  rating: z.number().min(1).max(5),
+  comment: z.string().optional(),
+  createdAt: z.date().optional(),
 });
 
-export const enrollments = pgTable("enrollments", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  courseId: integer("course_id").notNull(),
-  progress: integer("progress").notNull().default(0), // percentage
-  enrolledAt: timestamp("enrolled_at").defaultNow(),
+export const favoriteCarSchema = z.object({
+  _id: z.string().optional(),
+  userId: z.string(),
+  carId: z.string(),
+  createdAt: z.date().optional(),
 });
 
-export const tests = pgTable("tests", {
-  id: serial("id").primaryKey(),
-  courseId: integer("course_id").notNull(),
-  title: text("title").notNull(),
-  maxScore: integer("max_score").notNull(),
-  timeLimit: integer("time_limit"), // in minutes
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+export const inventoryLogSchema = z.object({
+  _id: z.string().optional(),
+  dealerId: z.string(),
+  carId: z.string(),
+  action: z.enum(["added", "updated", "sold", "removed"]),
+  oldData: z.record(z.any()).optional(),
+  newData: z.record(z.any()).optional(),
+  notes: z.string().optional(),
+  createdAt: z.date().optional(),
 });
 
-export const testResults = pgTable("test_results", {
-  id: serial("id").primaryKey(),
-  testId: integer("test_id").notNull(),
-  userId: integer("user_id").notNull(),
-  score: integer("score").notNull(),
-  maxScore: integer("max_score").notNull(),
-  grade: text("grade").notNull(),
-  completedAt: timestamp("completed_at").defaultNow(),
+export const saleSchema = z.object({
+  _id: z.string().optional(),
+  carId: z.string(),
+  dealerId: z.string(),
+  buyerName: z.string(),
+  buyerEmail: z.string(),
+  buyerPhone: z.string().optional(),
+  salePrice: z.string(),
+  financeType: z.enum(["cash", "finance", "lease"]).optional(),
+  paymentMethod: z.string().optional(),
+  status: z.enum(["pending", "completed", "cancelled"]).default("pending"),
+  notes: z.string().optional(),
+  createdAt: z.date().optional(),
 });
 
-export const recentActivities = pgTable("recent_activities", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  type: text("type").notNull(), // completed_video, scored_test, downloaded_notes
-  description: text("description").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+export const dealerAnalyticsSchema = z.object({
+  _id: z.string().optional(),
+  dealerId: z.string(),
+  period: z.enum(["daily", "weekly", "monthly", "yearly"]),
+  date: z.date(),
+  totalViews: z.number().default(0),
+  totalInquiries: z.number().default(0),
+  totalSales: z.number().default(0),
+  totalRevenue: z.string().default("0"),
+  carsListed: z.number().default(0),
+  carsSold: z.number().default(0),
+  averageTimeToSale: z.number().default(0),
+  topPerformingCars: z.array(z.string()).default([]),
+  createdAt: z.date().optional(),
 });
 
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-});
+// Insert schemas (omit _id and createdAt for new documents)
+export const insertUserSchema = userSchema.omit({ _id: true, createdAt: true });
+export const insertDealerSchema = dealerSchema.omit({ _id: true, createdAt: true });
+export const insertCarSchema = carSchema.omit({ _id: true, createdAt: true });
+export const insertReviewSchema = reviewSchema.omit({ _id: true, createdAt: true });
+export const insertFavoriteCarSchema = favoriteCarSchema.omit({ _id: true, createdAt: true });
+export const insertInventoryLogSchema = inventoryLogSchema.omit({ _id: true, createdAt: true });
+export const insertSaleSchema = saleSchema.omit({ _id: true, createdAt: true });
+export const insertDealerAnalyticsSchema = dealerAnalyticsSchema.omit({ _id: true, createdAt: true });
 
-export const insertCourseSchema = createInsertSchema(courses).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertCourseModuleSchema = createInsertSchema(courseModules).omit({
-  id: true,
-});
-
-export const insertCourseNoteSchema = createInsertSchema(courseNotes).omit({
-  id: true,
-});
-
-export const insertEnrollmentSchema = createInsertSchema(enrollments).omit({
-  id: true,
-  enrolledAt: true,
-});
-
-export const insertTestSchema = createInsertSchema(tests).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertTestResultSchema = createInsertSchema(testResults).omit({
-  id: true,
-  completedAt: true,
-});
-
-export const insertRecentActivitySchema = createInsertSchema(recentActivities).omit({
-  id: true,
-  createdAt: true,
-});
-
-// Types
-export type User = typeof users.$inferSelect;
+// Type definitions
+export type User = z.infer<typeof userSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Dealer = z.infer<typeof dealerSchema>;
+export type InsertDealer = z.infer<typeof insertDealerSchema>;
+export type Car = z.infer<typeof carSchema>;
+export type InsertCar = z.infer<typeof insertCarSchema>;
+export type Review = z.infer<typeof reviewSchema>;
+export type InsertReview = z.infer<typeof insertReviewSchema>;
+export type FavoriteCar = z.infer<typeof favoriteCarSchema>;
+export type InsertFavoriteCar = z.infer<typeof insertFavoriteCarSchema>;
+export type InventoryLog = z.infer<typeof inventoryLogSchema>;
+export type InsertInventoryLog = z.infer<typeof insertInventoryLogSchema>;
+export type Sale = z.infer<typeof saleSchema>;
+export type InsertSale = z.infer<typeof insertSaleSchema>;
+export type DealerAnalytics = z.infer<typeof dealerAnalyticsSchema>;
+export type InsertDealerAnalytics = z.infer<typeof insertDealerAnalyticsSchema>;
 
-export type Course = typeof courses.$inferSelect;
-export type InsertCourse = z.infer<typeof insertCourseSchema>;
+// Additional auth-related schemas
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
 
-export type CourseModule = typeof courseModules.$inferSelect;
-export type InsertCourseModule = z.infer<typeof insertCourseModuleSchema>;
+export const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["buyer", "seller"]).default("buyer"),
+});
 
-export type CourseNote = typeof courseNotes.$inferSelect;
-export type InsertCourseNote = z.infer<typeof insertCourseNoteSchema>;
-
-export type Enrollment = typeof enrollments.$inferSelect;
-export type InsertEnrollment = z.infer<typeof insertEnrollmentSchema>;
-
-export type Test = typeof tests.$inferSelect;
-export type InsertTest = z.infer<typeof insertTestSchema>;
-
-export type TestResult = typeof testResults.$inferSelect;
-export type InsertTestResult = z.infer<typeof insertTestResultSchema>;
-
-export type RecentActivity = typeof recentActivities.$inferSelect;
-export type InsertRecentActivity = z.infer<typeof insertRecentActivitySchema>;
+export type LoginData = z.infer<typeof loginSchema>;
+export type RegisterData = z.infer<typeof registerSchema>;

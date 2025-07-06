@@ -1,342 +1,279 @@
-import {
-  users, courses, courseModules, courseNotes, enrollments, tests, testResults, recentActivities,
-  type User, type InsertUser, type Course, type InsertCourse, type CourseModule, type InsertCourseModule,
-  type CourseNote, type InsertCourseNote, type Enrollment, type InsertEnrollment, type Test, type InsertTest,
-  type TestResult, type InsertTestResult, type RecentActivity, type InsertRecentActivity
-} from "@shared/schema";
+import { type User, type Dealer, type Car, type Review, type FavoriteCar, type InsertUser, type InsertDealer, type InsertCar, type InsertReview, type InsertFavoriteCar } from "@shared/schema";
 
 export interface IStorage {
-  // Users
-  getUser(id: number): Promise<User | undefined>;
+  // User operations
+  getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
-  getAllUsers(): Promise<User[]>;
-
-  // Courses
-  getCourse(id: number): Promise<Course | undefined>;
-  getAllCourses(): Promise<Course[]>;
-  getCoursesByCategory(category: string): Promise<Course[]>;
-  createCourse(course: InsertCourse): Promise<Course>;
-  updateCourse(id: number, course: Partial<InsertCourse>): Promise<Course | undefined>;
-  deleteCourse(id: number): Promise<boolean>;
-
-  // Course Modules
-  getCourseModules(courseId: number): Promise<CourseModule[]>;
-  createCourseModule(module: InsertCourseModule): Promise<CourseModule>;
-  updateCourseModule(id: number, module: Partial<InsertCourseModule>): Promise<CourseModule | undefined>;
-
-  // Course Notes
-  getCourseNotes(courseId: number): Promise<CourseNote[]>;
-  createCourseNote(note: InsertCourseNote): Promise<CourseNote>;
-
-  // Enrollments
-  getEnrollmentsByUser(userId: number): Promise<Enrollment[]>;
-  getEnrollmentsByCourse(courseId: number): Promise<Enrollment[]>;
-  createEnrollment(enrollment: InsertEnrollment): Promise<Enrollment>;
-  updateEnrollmentProgress(userId: number, courseId: number, progress: number): Promise<Enrollment | undefined>;
-
-  // Tests
-  getTest(id: number): Promise<Test | undefined>;
-  getTestsByCourse(courseId: number): Promise<Test[]>;
-  createTest(test: InsertTest): Promise<Test>;
-  updateTest(id: number, test: Partial<InsertTest>): Promise<Test | undefined>;
-
-  // Test Results
-  getTestResult(id: number): Promise<TestResult | undefined>;
-  getTestResultsByUser(userId: number): Promise<TestResult[]>;
-  getTestResultsByTest(testId: number): Promise<TestResult[]>;
-  createTestResult(result: InsertTestResult): Promise<TestResult>;
-
-  // Recent Activities
-  getRecentActivitiesByUser(userId: number, limit?: number): Promise<RecentActivity[]>;
-  createRecentActivity(activity: InsertRecentActivity): Promise<RecentActivity>;
-
-  // Dashboard Stats
-  getUserStats(userId: number): Promise<{
-    enrolledCourses: number;
-    completedCourses: number;
-    hoursLearned: number;
-    averageScore: number;
-  }>;
-
-  getAdminStats(): Promise<{
-    totalUsers: number;
-    activeCourses: number;
-    testsCompleted: number;
-    averageScore: number;
-  }>;
+  
+  // Dealer operations
+  getDealer(id: string): Promise<Dealer | undefined>;
+  getAllDealers(): Promise<Dealer[]>;
+  getDealersByLocation(location: string): Promise<Dealer[]>;
+  createDealer(dealer: InsertDealer): Promise<Dealer>;
+  updateDealerRating(id: string, rating: number, reviewCount: number): Promise<void>;
+  
+  // Car operations
+  getCar(id: string): Promise<Car | undefined>;
+  getAllCars(): Promise<Car[]>;
+  getCarsByDealer(dealerId: string): Promise<Car[]>;
+  searchCars(filters: {
+    make?: string;
+    model?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    minYear?: number;
+    maxYear?: number;
+    fuelType?: string;
+    transmission?: string;
+    bodyType?: string;
+    maxMileage?: number;
+  }): Promise<Car[]>;
+  searchCarsByText(query: string): Promise<Car[]>;
+  getFeaturedCars(): Promise<Car[]>;
+  createCar(car: InsertCar): Promise<Car>;
+  updateCar(id: string, updates: Partial<InsertCar>): Promise<Car | undefined>;
+  
+  // Review operations
+  getReview(id: string): Promise<Review | undefined>;
+  getReviewsByDealer(dealerId: string): Promise<Review[]>;
+  getReviewsByCar(carId: string): Promise<Review[]>;
+  createReview(review: InsertReview): Promise<Review>;
+  
+  // Favorite operations
+  getUserFavorites(userId: string): Promise<FavoriteCar[]>;
+  addToFavorites(favorite: InsertFavoriteCar): Promise<FavoriteCar>;
+  removeFromFavorites(userId: string, carId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User> = new Map();
-  private courses: Map<number, Course> = new Map();
-  private courseModules: Map<number, CourseModule> = new Map();
-  private courseNotes: Map<number, CourseNote> = new Map();
-  private enrollments: Map<number, Enrollment> = new Map();
-  private tests: Map<number, Test> = new Map();
-  private testResults: Map<number, TestResult> = new Map();
-  private recentActivities: Map<number, RecentActivity> = new Map();
-
-  private currentId = 1;
+  private users: Map<string, User> = new Map();
+  private dealers: Map<string, Dealer> = new Map();
+  private cars: Map<string, Car> = new Map();
+  private reviews: Map<string, Review> = new Map();
+  private favorites: Map<string, FavoriteCar> = new Map();
+  private currentUserId = 1;
+  private currentDealerId = 1;
+  private currentCarId = 1;
+  private currentReviewId = 1;
+  private currentFavoriteId = 1;
 
   constructor() {
     this.seedData();
   }
 
   private seedData() {
-    // Seed admin user
-    const adminUser: User = {
-      id: this.currentId++,
-      username: "admin",
-      email: "admin@eduplatform.com",
-      password: "admin123",
-      firstName: "Admin",
-      lastName: "User",
-      role: "admin",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.users.set(adminUser.id, adminUser);
-
-    // Seed student user
-    const studentUser: User = {
-      id: this.currentId++,
-      username: "john",
-      email: "john@example.com",
-      password: "john123",
-      firstName: "John",
-      lastName: "Smith",
-      role: "student",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.users.set(studentUser.id, studentUser);
-
-    // Seed courses
-    const webDevCourse: Course = {
-      id: this.currentId++,
-      title: "Web Development Fundamentals",
-      description: "Learn HTML, CSS, JavaScript, and React to build modern web applications",
-      category: "Programming",
-      thumbnail: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-      duration: 24,
-      videoCount: 18,
-      instructorId: 1,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.courses.set(webDevCourse.id, webDevCourse);
-
-    const dataScienceCourse: Course = {
-      id: this.currentId++,
-      title: "Data Science with Python",
-      description: "Master data analysis, visualization, and machine learning with Python",
-      category: "Data Science",
-      thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-      duration: 32,
-      videoCount: 25,
-      instructorId: 1,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.courses.set(dataScienceCourse.id, dataScienceCourse);
-
-    const mathCourse: Course = {
-      id: this.currentId++,
-      title: "Advanced Mathematics",
-      description: "Calculus, Linear Algebra, and Differential Equations for Engineers",
-      category: "Mathematics",
-      thumbnail: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-      duration: 28,
-      videoCount: 22,
-      instructorId: 1,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.courses.set(mathCourse.id, mathCourse);
-
-    // Seed enrollments
-    const enrollment1: Enrollment = {
-      id: this.currentId++,
-      userId: 2,
-      courseId: 3,
-      progress: 65,
-      enrolledAt: new Date(),
-    };
-    this.enrollments.set(enrollment1.id, enrollment1);
-
-    const enrollment2: Enrollment = {
-      id: this.currentId++,
-      userId: 2,
-      courseId: 4,
-      progress: 0,
-      enrolledAt: new Date(),
-    };
-    this.enrollments.set(enrollment2.id, enrollment2);
-
-    const enrollment3: Enrollment = {
-      id: this.currentId++,
-      userId: 2,
-      courseId: 5,
-      progress: 100,
-      enrolledAt: new Date(),
-    };
-    this.enrollments.set(enrollment3.id, enrollment3);
-
-    // Seed course modules
-    const modules = [
+    // Create sample dealers
+    const dealers = [
       {
-        id: this.currentId++,
-        courseId: 3,
-        title: "Introduction to JavaScript",
-        description: "Basic concepts and syntax",
-        videoUrl: "https://example.com/video1.mp4",
-        duration: 8,
-        orderIndex: 1,
-        isCompleted: true,
+        name: "Premium Auto Group",
+        location: "Downtown, NYC",
+        description: "Luxury and premium vehicles",
+        imageUrl: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300",
+        phone: "(555) 123-4567",
+        email: "contact@premiumauto.com",
+        address: "123 Auto Street, NYC, NY 10001",
+        rating: "4.9",
+        reviewCount: 156,
+        verified: true,
+        userId: null,
       },
       {
-        id: this.currentId++,
-        courseId: 3,
-        title: "Variables and Data Types",
-        description: "Understanding JavaScript variables",
-        videoUrl: "https://example.com/video2.mp4",
-        duration: 12,
-        orderIndex: 2,
-        isCompleted: false,
+        name: "Elite Motors",
+        location: "Beverly Hills, CA",
+        description: "Elite luxury vehicle dealer",
+        imageUrl: "https://images.unsplash.com/photo-1562911791-c7a97b729ec5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300",
+        phone: "(555) 234-5678",
+        email: "info@elitemotors.com",
+        address: "456 Luxury Ave, Beverly Hills, CA 90210",
+        rating: "4.7",
+        reviewCount: 89,
+        verified: true,
+        userId: null,
       },
       {
-        id: this.currentId++,
-        courseId: 3,
-        title: "Functions and Scope",
-        description: "Working with functions",
-        videoUrl: "https://example.com/video3.mp4",
-        duration: 15,
-        orderIndex: 3,
-        isCompleted: false,
+        name: "Family Auto Center",
+        location: "Austin, TX",
+        description: "Family-owned dealership serving Austin",
+        imageUrl: "https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300",
+        phone: "(555) 345-6789",
+        email: "sales@familyauto.com",
+        address: "789 Family Blvd, Austin, TX 78701",
+        rating: "4.8",
+        reviewCount: 203,
+        verified: true,
+        userId: null,
+      },
+      {
+        name: "Green Drive Motors",
+        location: "Seattle, WA",
+        description: "Eco-friendly and electric vehicles",
+        imageUrl: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300",
+        phone: "(555) 456-7890",
+        email: "hello@greendrive.com",
+        address: "321 Green St, Seattle, WA 98101",
+        rating: "4.6",
+        reviewCount: 124,
+        verified: true,
+        userId: null,
       },
     ];
-    modules.forEach(module => this.courseModules.set(module.id, module));
 
-    // Seed course notes
-    const notes = [
+    dealers.forEach(dealer => {
+      const id = this.currentDealerId++;
+      this.dealers.set(id, { ...dealer, id, createdAt: new Date() });
+    });
+
+    // Create sample cars
+    const cars = [
       {
-        id: this.currentId++,
-        courseId: 3,
-        title: "JavaScript Fundamentals.pdf",
-        fileName: "javascript-fundamentals.pdf",
-        fileSize: "2.3 MB",
-        downloadUrl: "/api/notes/download/1",
+        make: "BMW",
+        model: "3 Series",
+        year: 2023,
+        price: "45900",
+        mileage: 25000,
+        fuelType: "gasoline",
+        transmission: "automatic",
+        bodyType: "sedan",
+        drivetrain: "rwd",
+        engine: "2.0L Turbo",
+        horsepower: 255,
+        mpgCity: 26,
+        mpgHighway: 36,
+        safetyRating: 5,
+        color: "Red",
+        condition: "certified",
+        features: ["Navigation", "Leather Seats", "Sunroof", "Backup Camera"],
+        imageUrls: ["https://images.unsplash.com/photo-1552519507-da3b142c6e3d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"],
+        description: "Luxury sedan with premium features",
+        dealerId: 1,
+        available: true,
       },
       {
-        id: this.currentId++,
-        courseId: 3,
-        title: "Exercise Solutions.pdf",
-        fileName: "exercise-solutions.pdf",
-        fileSize: "1.8 MB",
-        downloadUrl: "/api/notes/download/2",
+        make: "Toyota",
+        model: "RAV4",
+        year: 2022,
+        price: "32500",
+        mileage: 18500,
+        fuelType: "hybrid",
+        transmission: "automatic",
+        bodyType: "suv",
+        drivetrain: "awd",
+        engine: "2.5L Hybrid",
+        horsepower: 219,
+        mpgCity: 41,
+        mpgHighway: 38,
+        safetyRating: 5,
+        color: "White",
+        condition: "used",
+        features: ["All-Wheel Drive", "Hybrid Engine", "Safety Sense 2.0"],
+        imageUrls: ["https://images.unsplash.com/photo-1549399542-7e3f8b79c341?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"],
+        description: "Reliable hybrid SUV with excellent fuel economy",
+        dealerId: 3,
+        available: true,
+      },
+      {
+        make: "Tesla",
+        model: "Model 3",
+        year: 2023,
+        price: "48900",
+        mileage: 12000,
+        fuelType: "electric",
+        transmission: "automatic",
+        bodyType: "sedan",
+        drivetrain: "rwd",
+        engine: "Electric Motor",
+        horsepower: 283,
+        mpgCity: 0,
+        mpgHighway: 0,
+        safetyRating: 5,
+        color: "Silver",
+        condition: "used",
+        features: ["Autopilot", "Supercharging", "Premium Interior"],
+        imageUrls: ["https://images.unsplash.com/photo-1560958089-b8a1929cea89?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"],
+        description: "Electric sedan with cutting-edge technology",
+        dealerId: 4,
+        available: true,
+      },
+      {
+        make: "Honda",
+        model: "Civic",
+        year: 2023,
+        price: "24900",
+        mileage: 8200,
+        fuelType: "gasoline",
+        transmission: "manual",
+        bodyType: "sedan",
+        drivetrain: "fwd",
+        engine: "2.0L VTEC",
+        horsepower: 158,
+        mpgCity: 28,
+        mpgHighway: 37,
+        safetyRating: 5,
+        color: "Blue",
+        condition: "new",
+        features: ["Honda Sensing", "Manual Transmission", "Sport Mode"],
+        imageUrls: ["https://images.unsplash.com/photo-1502877338535-766e1452684a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"],
+        description: "Sporty compact sedan with manual transmission",
+        dealerId: 3,
+        available: true,
+      },
+      {
+        make: "Ford",
+        model: "F-150",
+        year: 2022,
+        price: "42700",
+        mileage: 35000,
+        fuelType: "gasoline",
+        transmission: "automatic",
+        bodyType: "pickup",
+        drivetrain: "4wd",
+        engine: "3.5L V6",
+        horsepower: 400,
+        mpgCity: 20,
+        mpgHighway: 24,
+        safetyRating: 4,
+        color: "Black",
+        condition: "used",
+        features: ["4WD", "Towing Package", "Bed Liner"],
+        imageUrls: ["https://images.unsplash.com/photo-1615906344345-10c5bbca7b65?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"],
+        description: "Powerful pickup truck for work and play",
+        dealerId: 1,
+        available: true,
+      },
+      {
+        make: "Audi",
+        model: "A5 Convertible",
+        year: 2023,
+        price: "54200",
+        mileage: 15600,
+        fuelType: "gasoline",
+        transmission: "automatic",
+        bodyType: "convertible",
+        drivetrain: "awd",
+        engine: "2.0L TFSI",
+        horsepower: 261,
+        mpgCity: 24,
+        mpgHighway: 34,
+        safetyRating: 5,
+        color: "White",
+        condition: "certified",
+        features: ["Quattro AWD", "Virtual Cockpit", "Bang & Olufsen Audio"],
+        imageUrls: ["https://images.unsplash.com/photo-1502920917128-1aa500764cbd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"],
+        description: "Luxury convertible with premium amenities",
+        dealerId: 2,
+        available: true,
       },
     ];
-    notes.forEach(note => this.courseNotes.set(note.id, note));
 
-    // Seed tests
-    const webTest: Test = {
-      id: this.currentId++,
-      courseId: 3,
-      title: "JavaScript Quiz",
-      maxScore: 100,
-      timeLimit: 60,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.tests.set(webTest.id, webTest);
-
-    const dataTest: Test = {
-      id: this.currentId++,
-      courseId: 4,
-      title: "Data Structures",
-      maxScore: 100,
-      timeLimit: 90,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.tests.set(dataTest.id, dataTest);
-
-    const mathTest: Test = {
-      id: this.currentId++,
-      courseId: 5,
-      title: "Calculus Final",
-      maxScore: 100,
-      timeLimit: 120,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.tests.set(mathTest.id, mathTest);
-
-    // Seed test results
-    const results = [
-      {
-        id: this.currentId++,
-        testId: webTest.id,
-        userId: 2,
-        score: 92,
-        maxScore: 100,
-        grade: "A",
-        completedAt: new Date("2024-10-15"),
-      },
-      {
-        id: this.currentId++,
-        testId: dataTest.id,
-        userId: 2,
-        score: 78,
-        maxScore: 100,
-        grade: "B",
-        completedAt: new Date("2024-10-12"),
-      },
-      {
-        id: this.currentId++,
-        testId: mathTest.id,
-        userId: 2,
-        score: 95,
-        maxScore: 100,
-        grade: "A+",
-        completedAt: new Date("2024-10-08"),
-      },
-    ];
-    results.forEach(result => this.testResults.set(result.id, result));
-
-    // Seed recent activities
-    const activities = [
-      {
-        id: this.currentId++,
-        userId: 2,
-        type: "completed_video",
-        description: 'Completed "Introduction to Machine Learning"',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      },
-      {
-        id: this.currentId++,
-        userId: 2,
-        type: "scored_test",
-        description: 'Scored 92% on "Data Structures Quiz"',
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      },
-      {
-        id: this.currentId++,
-        userId: 2,
-        type: "downloaded_notes",
-        description: 'Downloaded "Python Fundamentals Notes"',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      },
-    ];
-    activities.forEach(activity => this.recentActivities.set(activity.id, activity));
+    cars.forEach(car => {
+      const id = this.currentCarId++;
+      this.cars.set(id, { ...car, id, createdAt: new Date() });
+    });
   }
 
-  // User methods
+  // User operations
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
@@ -350,280 +287,180 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const user: User = {
-      ...insertUser,
-      id: this.currentId++,
-      role: insertUser.role || "student",
-      isActive: insertUser.isActive ?? true,
-      avatar: insertUser.avatar || null,
-      createdAt: new Date(),
-    };
-    this.users.set(user.id, user);
+    const id = this.currentUserId++;
+    const user: User = { ...insertUser, id, createdAt: new Date() };
+    this.users.set(id, user);
     return user;
   }
 
-  async updateUser(id: number, updateUser: Partial<InsertUser>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...updateUser };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+  // Dealer operations
+  async getDealer(id: number): Promise<Dealer | undefined> {
+    return this.dealers.get(id);
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+  async getAllDealers(): Promise<Dealer[]> {
+    return Array.from(this.dealers.values());
   }
 
-  // Course methods
-  async getCourse(id: number): Promise<Course | undefined> {
-    return this.courses.get(id);
-  }
-
-  async getAllCourses(): Promise<Course[]> {
-    return Array.from(this.courses.values()).filter(course => course.isActive);
-  }
-
-  async getCoursesByCategory(category: string): Promise<Course[]> {
-    return Array.from(this.courses.values()).filter(
-      course => course.category === category && course.isActive
+  async getDealersByLocation(location: string): Promise<Dealer[]> {
+    return Array.from(this.dealers.values()).filter(dealer => 
+      dealer.location.toLowerCase().includes(location.toLowerCase())
     );
   }
 
-  async createCourse(insertCourse: InsertCourse): Promise<Course> {
-    const course: Course = {
-      ...insertCourse,
-      id: this.currentId++,
-      isActive: insertCourse.isActive ?? true,
-      createdAt: new Date(),
-    };
-    this.courses.set(course.id, course);
-    return course;
+  async createDealer(insertDealer: InsertDealer): Promise<Dealer> {
+    const id = this.currentDealerId++;
+    const dealer: Dealer = { ...insertDealer, id, createdAt: new Date() };
+    this.dealers.set(id, dealer);
+    return dealer;
   }
 
-  async updateCourse(id: number, updateCourse: Partial<InsertCourse>): Promise<Course | undefined> {
-    const course = this.courses.get(id);
-    if (!course) return undefined;
-    
-    const updatedCourse = { ...course, ...updateCourse };
-    this.courses.set(id, updatedCourse);
-    return updatedCourse;
-  }
-
-  async deleteCourse(id: number): Promise<boolean> {
-    const course = this.courses.get(id);
-    if (!course) return false;
-    
-    const updatedCourse = { ...course, isActive: false };
-    this.courses.set(id, updatedCourse);
-    return true;
-  }
-
-  // Course Module methods
-  async getCourseModules(courseId: number): Promise<CourseModule[]> {
-    return Array.from(this.courseModules.values())
-      .filter(module => module.courseId === courseId)
-      .sort((a, b) => a.orderIndex - b.orderIndex);
-  }
-
-  async createCourseModule(insertModule: InsertCourseModule): Promise<CourseModule> {
-    const module: CourseModule = {
-      ...insertModule,
-      id: this.currentId++,
-      description: insertModule.description || null,
-      videoUrl: insertModule.videoUrl || null,
-      isCompleted: insertModule.isCompleted ?? false,
-    };
-    this.courseModules.set(module.id, module);
-    return module;
-  }
-
-  async updateCourseModule(id: number, updateModule: Partial<InsertCourseModule>): Promise<CourseModule | undefined> {
-    const module = this.courseModules.get(id);
-    if (!module) return undefined;
-    
-    const updatedModule = { ...module, ...updateModule };
-    this.courseModules.set(id, updatedModule);
-    return updatedModule;
-  }
-
-  // Course Notes methods
-  async getCourseNotes(courseId: number): Promise<CourseNote[]> {
-    return Array.from(this.courseNotes.values()).filter(note => note.courseId === courseId);
-  }
-
-  async createCourseNote(insertNote: InsertCourseNote): Promise<CourseNote> {
-    const note: CourseNote = {
-      ...insertNote,
-      id: this.currentId++,
-    };
-    this.courseNotes.set(note.id, note);
-    return note;
-  }
-
-  // Enrollment methods
-  async getEnrollmentsByUser(userId: number): Promise<Enrollment[]> {
-    return Array.from(this.enrollments.values()).filter(enrollment => enrollment.userId === userId);
-  }
-
-  async getEnrollmentsByCourse(courseId: number): Promise<Enrollment[]> {
-    return Array.from(this.enrollments.values()).filter(enrollment => enrollment.courseId === courseId);
-  }
-
-  async createEnrollment(insertEnrollment: InsertEnrollment): Promise<Enrollment> {
-    const enrollment: Enrollment = {
-      ...insertEnrollment,
-      id: this.currentId++,
-      progress: insertEnrollment.progress ?? 0,
-      enrolledAt: new Date(),
-    };
-    this.enrollments.set(enrollment.id, enrollment);
-    return enrollment;
-  }
-
-  async updateEnrollmentProgress(userId: number, courseId: number, progress: number): Promise<Enrollment | undefined> {
-    const enrollment = Array.from(this.enrollments.values()).find(
-      e => e.userId === userId && e.courseId === courseId
-    );
-    if (!enrollment) return undefined;
-    
-    const updatedEnrollment = { ...enrollment, progress };
-    this.enrollments.set(enrollment.id, updatedEnrollment);
-    return updatedEnrollment;
-  }
-
-  // Test methods
-  async getTest(id: number): Promise<Test | undefined> {
-    return this.tests.get(id);
-  }
-
-  async getTestsByCourse(courseId: number): Promise<Test[]> {
-    return Array.from(this.tests.values()).filter(test => test.courseId === courseId && test.isActive);
-  }
-
-  async createTest(insertTest: InsertTest): Promise<Test> {
-    const test: Test = {
-      ...insertTest,
-      id: this.currentId++,
-      isActive: insertTest.isActive ?? true,
-      timeLimit: insertTest.timeLimit || null,
-      createdAt: new Date(),
-    };
-    this.tests.set(test.id, test);
-    return test;
-  }
-
-  async updateTest(id: number, updateTest: Partial<InsertTest>): Promise<Test | undefined> {
-    const test = this.tests.get(id);
-    if (!test) return undefined;
-    
-    const updatedTest = { ...test, ...updateTest };
-    this.tests.set(id, updatedTest);
-    return updatedTest;
-  }
-
-  // Test Result methods
-  async getTestResult(id: number): Promise<TestResult | undefined> {
-    return this.testResults.get(id);
-  }
-
-  async getTestResultsByUser(userId: number): Promise<TestResult[]> {
-    return Array.from(this.testResults.values()).filter(result => result.userId === userId);
-  }
-
-  async getTestResultsByTest(testId: number): Promise<TestResult[]> {
-    return Array.from(this.testResults.values()).filter(result => result.testId === testId);
-  }
-
-  async createTestResult(insertResult: InsertTestResult): Promise<TestResult> {
-    const result: TestResult = {
-      ...insertResult,
-      id: this.currentId++,
-      completedAt: new Date(),
-    };
-    this.testResults.set(result.id, result);
-    return result;
-  }
-
-  // Recent Activities methods
-  async getRecentActivitiesByUser(userId: number, limit = 10): Promise<RecentActivity[]> {
-    return Array.from(this.recentActivities.values())
-      .filter(activity => activity.userId === userId)
-      .sort((a, b) => {
-        const aTime = a.createdAt ? a.createdAt.getTime() : 0;
-        const bTime = b.createdAt ? b.createdAt.getTime() : 0;
-        return bTime - aTime;
-      })
-      .slice(0, limit);
-  }
-
-  async createRecentActivity(insertActivity: InsertRecentActivity): Promise<RecentActivity> {
-    const activity: RecentActivity = {
-      ...insertActivity,
-      id: this.currentId++,
-      createdAt: new Date(),
-    };
-    this.recentActivities.set(activity.id, activity);
-    return activity;
-  }
-
-  // Dashboard Stats methods
-  async getUserStats(userId: number): Promise<{
-    enrolledCourses: number;
-    completedCourses: number;
-    hoursLearned: number;
-    averageScore: number;
-  }> {
-    const enrollments = await this.getEnrollmentsByUser(userId);
-    const testResults = await this.getTestResultsByUser(userId);
-    
-    const enrolledCourses = enrollments.length;
-    const completedCourses = enrollments.filter(e => (e.progress || 0) === 100).length;
-    
-    let totalHours = 0;
-    for (const enrollment of enrollments) {
-      const course = await this.getCourse(enrollment.courseId);
-      if (course) {
-        const progress = enrollment.progress || 0;
-        totalHours += Math.floor((course.duration * progress) / 100);
-      }
+  async updateDealerRating(id: number, rating: number, reviewCount: number): Promise<void> {
+    const dealer = this.dealers.get(id);
+    if (dealer) {
+      dealer.rating = rating.toString();
+      dealer.reviewCount = reviewCount;
     }
-
-    const averageScore = testResults.length > 0 
-      ? Math.round(testResults.reduce((sum, result) => sum + (result.score / result.maxScore * 100), 0) / testResults.length)
-      : 0;
-
-    return {
-      enrolledCourses,
-      completedCourses,
-      hoursLearned: totalHours,
-      averageScore,
-    };
   }
 
-  async getAdminStats(): Promise<{
-    totalUsers: number;
-    activeCourses: number;
-    testsCompleted: number;
-    averageScore: number;
-  }> {
-    const users = await this.getAllUsers();
-    const courses = await this.getAllCourses();
-    const testResults = Array.from(this.testResults.values());
-    
-    const totalUsers = users.filter(u => u.role === "student").length;
-    const activeCourses = courses.length;
-    const testsCompleted = testResults.length;
-    const averageScore = testResults.length > 0
-      ? Math.round(testResults.reduce((sum, result) => sum + (result.score / result.maxScore * 100), 0) / testResults.length * 10) / 10
-      : 0;
+  // Car operations
+  async getCar(id: number): Promise<Car | undefined> {
+    return this.cars.get(id);
+  }
 
-    return {
-      totalUsers,
-      activeCourses,
-      testsCompleted,
-      averageScore,
-    };
+  async getAllCars(): Promise<Car[]> {
+    return Array.from(this.cars.values()).filter(car => car.available);
+  }
+
+  async getCarsByDealer(dealerId: number): Promise<Car[]> {
+    return Array.from(this.cars.values()).filter(car => car.dealerId === dealerId && car.available);
+  }
+
+  async searchCars(filters: {
+    make?: string;
+    model?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    minYear?: number;
+    maxYear?: number;
+    fuelType?: string;
+    transmission?: string;
+    bodyType?: string;
+    maxMileage?: number;
+  }): Promise<Car[]> {
+    return Array.from(this.cars.values()).filter(car => {
+      if (!car.available) return false;
+      
+      if (filters.make && car.make.toLowerCase() !== filters.make.toLowerCase()) return false;
+      if (filters.model && car.model.toLowerCase() !== filters.model.toLowerCase()) return false;
+      if (filters.minPrice && parseFloat(car.price) < filters.minPrice) return false;
+      if (filters.maxPrice && parseFloat(car.price) > filters.maxPrice) return false;
+      if (filters.minYear && car.year < filters.minYear) return false;
+      if (filters.maxYear && car.year > filters.maxYear) return false;
+      if (filters.fuelType && car.fuelType !== filters.fuelType) return false;
+      if (filters.transmission && car.transmission !== filters.transmission) return false;
+      if (filters.bodyType && car.bodyType !== filters.bodyType) return false;
+      if (filters.maxMileage && car.mileage > filters.maxMileage) return false;
+      
+      return true;
+    });
+  }
+
+  async searchCarsByText(query: string): Promise<Car[]> {
+    const searchTerm = query.toLowerCase().trim();
+    
+    return Array.from(this.cars.values()).filter(car => {
+      if (!car.available) return false;
+      
+      // Search in make, model, and combined make+model
+      const fullName = `${car.make} ${car.model}`.toLowerCase();
+      const makeMatch = car.make.toLowerCase().includes(searchTerm);
+      const modelMatch = car.model.toLowerCase().includes(searchTerm);
+      const fullNameMatch = fullName.includes(searchTerm);
+      
+      // Search in year (exact match or part of full name)
+      const yearMatch = car.year.toString() === searchTerm || fullName.includes(searchTerm);
+      
+      // Search in body type and fuel type
+      const bodyTypeMatch = car.bodyType.toLowerCase().includes(searchTerm);
+      const fuelTypeMatch = car.fuelType.toLowerCase().includes(searchTerm);
+      
+      // Search in transmission
+      const transmissionMatch = car.transmission.toLowerCase().includes(searchTerm);
+      
+      return makeMatch || modelMatch || fullNameMatch || yearMatch || bodyTypeMatch || fuelTypeMatch || transmissionMatch;
+    });
+  }
+
+  async getFeaturedCars(): Promise<Car[]> {
+    return Array.from(this.cars.values())
+      .filter(car => car.available)
+      .slice(0, 6);
+  }
+
+  async createCar(insertCar: InsertCar): Promise<Car> {
+    const id = this.currentCarId++;
+    const car: Car = { ...insertCar, id, createdAt: new Date() };
+    this.cars.set(id, car);
+    return car;
+  }
+
+  async updateCar(id: number, updates: Partial<InsertCar>): Promise<Car | undefined> {
+    const car = this.cars.get(id);
+    if (car) {
+      Object.assign(car, updates);
+      return car;
+    }
+    return undefined;
+  }
+
+  // Review operations
+  async getReview(id: number): Promise<Review | undefined> {
+    return this.reviews.get(id);
+  }
+
+  async getReviewsByDealer(dealerId: number): Promise<Review[]> {
+    return Array.from(this.reviews.values()).filter(review => review.dealerId === dealerId);
+  }
+
+  async getReviewsByCar(carId: number): Promise<Review[]> {
+    return Array.from(this.reviews.values()).filter(review => review.carId === carId);
+  }
+
+  async createReview(insertReview: InsertReview): Promise<Review> {
+    const id = this.currentReviewId++;
+    const review: Review = { ...insertReview, id, createdAt: new Date() };
+    this.reviews.set(id, review);
+    
+    // Update dealer rating and review count
+    if (insertReview.dealerId) {
+      const dealerReviews = Array.from(this.reviews.values()).filter(r => r.dealerId === insertReview.dealerId);
+      const averageRating = dealerReviews.reduce((sum, r) => sum + r.rating, 0) / dealerReviews.length;
+      await this.updateDealerRating(insertReview.dealerId, averageRating, dealerReviews.length);
+    }
+    
+    return review;
+  }
+
+  // Favorite operations
+  async getUserFavorites(userId: number): Promise<FavoriteCar[]> {
+    return Array.from(this.favorites.values()).filter(favorite => favorite.userId === userId);
+  }
+
+  async addToFavorites(insertFavorite: InsertFavoriteCar): Promise<FavoriteCar> {
+    const id = this.currentFavoriteId++;
+    const favorite: FavoriteCar = { ...insertFavorite, id, createdAt: new Date() };
+    this.favorites.set(id, favorite);
+    return favorite;
+  }
+
+  async removeFromFavorites(userId: number, carId: number): Promise<void> {
+    const favorite = Array.from(this.favorites.entries()).find(
+      ([_, fav]) => fav.userId === userId && fav.carId === carId
+    );
+    if (favorite) {
+      this.favorites.delete(favorite[0]);
+    }
   }
 }
 

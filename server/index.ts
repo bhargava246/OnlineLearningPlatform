@@ -1,22 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
-import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { connectDB } from "./config/database.js";
 
 const app = express();
-
-// CORS configuration for production deployment
-app.use(cors({
-  origin: [
-    'https://online-learning-platform-puce-sigma.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:5000',
-    process.env.CORS_ORIGIN
-  ].filter(Boolean),
-  credentials: true
-}));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -51,9 +37,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Connect to MongoDB
-  await connectDB();
-  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -73,8 +56,10 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use PORT from environment (for Render) or default to 5000 (for Replit)
-  const port = process.env.PORT || 5000;
+  // ALWAYS serve the app on port 5000
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
+  const port = 5000;
   server.listen({
     port,
     host: "0.0.0.0",
