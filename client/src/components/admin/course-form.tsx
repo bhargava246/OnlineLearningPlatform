@@ -29,7 +29,6 @@ const moduleSchema = z.object({
     (url) => /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/.test(url),
     "Please enter a valid YouTube URL (youtube.com or youtu.be)"
   ),
-  duration: z.number().min(1, "Duration must be at least 1 minute"),
   orderIndex: z.number().min(0, "Order index must be 0 or greater").optional(),
 });
 
@@ -94,16 +93,7 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
       const url = course ? `/api/mongo/courses/${course._id || course.id}` : '/api/mongo/courses';
       const method = course ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Course operation failed:", errorText);
-        throw new Error(`Failed to ${course ? 'update' : 'create'} course: ${errorText}`);
-      }
+      const response = await apiRequest(method, url, data);
       return response.json();
     },
     onSuccess: () => {
@@ -133,7 +123,6 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
         title: "",
         description: "",
         youtubeUrl: "",
-        duration: 0,
       },
     ]);
   };
@@ -182,7 +171,6 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
     const validatedModules = modules.map((module, index) => ({
       ...module,
       orderIndex: index,
-      duration: Number(module.duration) || 0,
     }));
 
     const validatedNotes = notes.map(note => ({
@@ -206,10 +194,10 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
 
     // Validate modules
     for (const module of validatedModules) {
-      if (!module.title || !module.youtubeUrl || !module.duration) {
+      if (!module.title || !module.youtubeUrl) {
         toast({
           title: "Error",
-          description: "All video modules must have title, YouTube URL, and duration",
+          description: "All video modules must have title and YouTube URL",
           variant: "destructive",
         });
         return;
@@ -545,8 +533,8 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
                           <p className="text-gray-900 dark:text-white font-medium">{module.title}</p>
                         </div>
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
-                          <span className="font-semibold text-blue-700 dark:text-blue-300 text-sm">Duration:</span>
-                          <p className="text-gray-900 dark:text-white font-medium">{module.duration} minutes</p>
+                          <span className="font-semibold text-blue-700 dark:text-blue-300 text-sm">Status:</span>
+                          <p className="text-gray-900 dark:text-white font-medium">Video Module</p>
                         </div>
                       </div>
                       
@@ -632,23 +620,7 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
                           className="h-11 border-2 border-purple-200 dark:border-purple-700 focus:border-purple-500 rounded-lg bg-white dark:bg-gray-800"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2">
-                          ⏱️ Duration
-                        </label>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={module.duration || ""}
-                            onChange={(e) => updateModule(index, "duration", Number(e.target.value))}
-                            className="h-11 border-2 border-purple-200 dark:border-purple-700 focus:border-purple-500 rounded-lg bg-white dark:bg-gray-800 pr-20"
-                          />
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">
-                            minutes
-                          </div>
-                        </div>
-                      </div>
+
                     </div>
 
                     <div>
@@ -885,21 +857,7 @@ export default function CourseForm({ course, onSuccess, onCancel }: CourseFormPr
                     Cancel
                   </Button>
                   
-                  <Button
-                    variant="outline"
-                    className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-300 dark:border-blue-600 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 text-blue-700 dark:text-blue-300 px-8 py-3 h-12"
-                  >
-                    <span className="mr-2">👀</span>
-                    Preview Course
-                  </Button>
                   
-                  <Button
-                    variant="outline"
-                    className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-yellow-300 dark:border-yellow-600 hover:from-yellow-100 hover:to-amber-100 dark:hover:from-yellow-900/30 dark:hover:to-amber-900/30 text-yellow-700 dark:text-yellow-300 px-8 py-3 h-12"
-                  >
-                    <span className="mr-2">💾</span>
-                    Save Draft
-                  </Button>
                   
                   <Button 
                     onClick={form.handleSubmit(onSubmit)}

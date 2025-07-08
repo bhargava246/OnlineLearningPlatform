@@ -38,12 +38,14 @@ export default function Admin() {
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any>(null);
+  const [editingTest, setEditingTest] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("analytics");
 
   const { data: adminStats, isLoading: statsLoading, refetch: refetchStats } = useQuery<{
     totalCourses: number;
     totalStudents: number;
     studentsEnrolled: number;
+    uniqueStudentsEnrolled?: number;
     averageScore: number;
     averageCompletion: number;
     courseCompletionRate: number;
@@ -53,7 +55,8 @@ export default function Admin() {
     activeCourses: number;
   }>({
     queryKey: ["/api/mongo/admin/stats"],
-    refetchInterval: 30000, // Refresh every 30 seconds for real-time data
+    refetchInterval: 3000, // Refresh every 3 seconds for real-time data
+    refetchIntervalInBackground: true,
   });
 
   const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({
@@ -70,11 +73,50 @@ export default function Admin() {
 
   const { data: studentResults, isLoading: resultsLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/admin/student-results"],
+    refetchInterval: 3000, // Refresh every 3 seconds for real-time data
+    refetchIntervalInBackground: true,
   });
 
   const { data: pendingApprovals, isLoading: approvalsLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/admin/pending-approvals"],
   });
+
+  // Delete test mutation
+  const deleteTestMutation = useMutation({
+    mutationFn: async (testId: string) => {
+      const response = await apiRequest("DELETE", `/api/mongo/tests/${testId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
+      toast({
+        title: "Success",
+        description: "Test deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete test",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle test edit
+  const handleEditTest = (test: any) => {
+    console.log('Edit test clicked:', test);
+    setEditingTest(test);
+    setShowTestForm(true);
+  };
+
+  // Handle test delete
+  const handleDeleteTest = async (testId: string) => {
+    console.log('Delete test clicked:', testId);
+    if (window.confirm("Are you sure you want to delete this test? This action cannot be undone.")) {
+      deleteTestMutation.mutate(testId);
+    }
+  };
 
   // Real-time analytics data refresh
   useEffect(() => {
@@ -135,12 +177,7 @@ export default function Admin() {
   // Delete course mutation
   const deleteCourse = useMutation({
     mutationFn: async (courseId: string) => {
-      const response = await fetch(`/api/mongo/courses/${courseId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete course');
-      }
+      const response = await apiRequest("DELETE", `/api/mongo/courses/${courseId}`);
       return response.json();
     },
     onSuccess: () => {
@@ -216,15 +253,24 @@ export default function Admin() {
               
               {/* Admin stats mini cards */}
               <div className="hidden lg:flex space-x-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30 relative">
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  </div>
                   <div className="text-2xl font-bold text-white">{adminStats?.totalCourses || 0}</div>
                   <div className="text-blue-100 text-sm font-medium">Total Courses</div>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30">
-                  <div className="text-2xl font-bold text-white">{adminStats?.studentsEnrolled || 0}</div>
-                  <div className="text-blue-100 text-sm font-medium">Enrollments</div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30 relative">
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  </div>
+                  <div className="text-2xl font-bold text-white">{adminStats?.uniqueStudentsEnrolled || adminStats?.totalStudents || 0}</div>
+                  <div className="text-blue-100 text-sm font-medium">Unique Students</div>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30 relative">
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  </div>
                   <div className="text-2xl font-bold text-white">{adminStats?.averageScore || 0}%</div>
                   <div className="text-blue-100 text-sm font-medium">Avg Score</div>
                 </div>
@@ -357,11 +403,18 @@ export default function Admin() {
                             queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/stats"] });
                             queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/student-results"] });
                             queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/users"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/courses"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/pending-approvals"] });
+                            toast({
+                              title: "Data Refreshed",
+                              description: "All analytics data has been updated",
+                            });
                           }}
                           className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300"
                         >
                           <RefreshCw className="w-4 h-4 mr-2" />
-                          Refresh
+                          Refresh Now
                         </Button>
                       </div>
                     </div>
@@ -380,9 +433,7 @@ export default function Admin() {
                         <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
                           {adminStats?.totalCourses || 0}
                         </p>
-                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                          {adminStats?.activeCourses || 0} active courses
-                        </p>
+                        
                       </div>
                       <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
                         <BookOpen className="w-6 h-6 text-blue-600" />
@@ -396,13 +447,11 @@ export default function Admin() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-green-600 dark:text-green-400">Students Enrolled</p>
+                        <p className="text-sm font-medium text-green-600 dark:text-green-400">Unique Students Enrolled</p>
                         <p className="text-3xl font-bold text-green-900 dark:text-green-100">
-                          {adminStats?.studentsEnrolled || 0}
+                          {adminStats?.uniqueStudentsEnrolled || adminStats?.totalStudents || 0}
                         </p>
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                          {adminStats?.totalStudents || 0} total students
-                        </p>
+                        
                       </div>
                       <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
                         <Users className="w-6 h-6 text-green-600" />
@@ -440,9 +489,7 @@ export default function Admin() {
                         <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">
                           {adminStats?.averageCompletion || 0}%
                         </p>
-                        <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                          {adminStats?.completedCourses || 0} courses completed
-                        </p>
+                        
                       </div>
                       <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
                         <Target className="w-6 h-6 text-orange-600" />
@@ -475,25 +522,39 @@ export default function Admin() {
                     <div className="space-y-6">
                       {/* User Statistics */}
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl relative">
+                          <div className="absolute top-2 right-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                          </div>
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                               <Users className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Active Users</p>
-                              <p className="text-xl font-bold text-gray-900 dark:text-white">{analyticsData.totalActiveUsers}</p>
+                              <div className="flex items-center space-x-1">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Active Users</p>
+                                <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
+                              </div>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white">{adminStats?.totalStudents || analyticsData.totalActiveUsers}</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400">Live count</p>
                             </div>
                           </div>
                         </div>
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl relative">
+                          <div className="absolute top-2 right-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                          </div>
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                               <TrendingUp className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">New This Week</p>
+                              <div className="flex items-center space-x-1">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">New This Week</p>
+                                <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
+                              </div>
                               <p className="text-xl font-bold text-gray-900 dark:text-white">{analyticsData.recentActivity.newUsers}</p>
+                              <p className="text-xs text-green-600 dark:text-green-400">Weekly growth</p>
                             </div>
                           </div>
                         </div>
@@ -504,15 +565,26 @@ export default function Admin() {
                         <h4 className="font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
                           <PieChart className="w-4 h-4" />
                           <span>Course Distribution</span>
+                          <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
                         </h4>
-                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
+                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl relative">
+                          <div className="absolute top-2 right-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                          </div>
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-600 dark:text-gray-400">Total Categories</span>
                             <span className="font-bold text-gray-900 dark:text-white">{analyticsData.courseCategories}</span>
                           </div>
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-sm text-gray-600 dark:text-gray-400">Active Courses</span>
-                            <span className="font-bold text-gray-900 dark:text-white">{analyticsData.activeCourses}</span>
+                            <span className="font-bold text-gray-900 dark:text-white">{adminStats?.totalCourses || analyticsData.activeCourses}</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-500">Live Updates</span>
+                            <div className="flex items-center space-x-1">
+                              <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
+                              <span className="text-xs text-green-600 dark:text-green-400">Active</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -541,25 +613,39 @@ export default function Admin() {
                     <div className="space-y-6">
                       {/* Test Performance */}
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl">
+                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl relative">
+                          <div className="absolute top-2 right-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                          </div>
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
                               <Award className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Total Tests</p>
-                              <p className="text-xl font-bold text-gray-900 dark:text-white">{analyticsData.totalTestResults}</p>
+                              <div className="flex items-center space-x-1">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Total Tests</p>
+                                <div className="w-1 h-1 bg-purple-500 rounded-full animate-pulse" />
+                              </div>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white">{adminStats?.testsCompleted || analyticsData.totalTestResults}</p>
+                              <p className="text-xs text-purple-600 dark:text-purple-400">Live data</p>
                             </div>
                           </div>
                         </div>
-                        <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 p-4 rounded-xl">
+                        <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 p-4 rounded-xl relative">
+                          <div className="absolute top-2 right-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                          </div>
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
                               <BarChart3 className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Avg Score</p>
-                              <p className="text-xl font-bold text-gray-900 dark:text-white">{analyticsData.averageTestScore}%</p>
+                              <div className="flex items-center space-x-1">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Avg Score</p>
+                                <div className="w-1 h-1 bg-orange-500 rounded-full animate-pulse" />
+                              </div>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white">{adminStats?.averageScore || analyticsData.averageTestScore}%</p>
+                              <p className="text-xs text-orange-600 dark:text-orange-400">Real-time avg</p>
                             </div>
                           </div>
                         </div>
@@ -572,7 +658,7 @@ export default function Admin() {
                           <span>Student Overview</span>
                         </h4>
                         <div className="space-y-2">
-                          {studentResults?.slice(0, 3).map((student, index) => (
+                          {studentResults?.map((student, index) => (
                             <div key={student.student._id} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
@@ -586,14 +672,14 @@ export default function Admin() {
                                       {student.student.firstName} {student.student.lastName}
                                     </p>
                                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                                      {student.testResults?.length || 0} tests completed
+                                      {student.testResults?.filter(test => test.result)?.length || 0} tests completed
                                     </p>
                                   </div>
                                 </div>
                                 <div className="text-right">
                                   <p className="font-bold text-gray-900 dark:text-white">
-                                    {student.testResults?.length ? 
-                                      Math.round(student.testResults.reduce((sum, test) => sum + (test.score || 0), 0) / student.testResults.length) 
+                                    {student.testResults?.filter(test => test.result)?.length ? 
+                                      Math.round(student.testResults.filter(test => test.result).reduce((sum, test) => sum + ((test.result.score || 0) / (test.maxScore || 100) * 100), 0) / student.testResults.filter(test => test.result).length) 
                                       : 0}%
                                   </p>
                                 </div>
@@ -1112,8 +1198,15 @@ export default function Admin() {
                       scrollbarColor: '#8b5cf6 #f3f4f6'
                     }}>
                       <TestForm 
-                        onSuccess={() => setShowTestForm(false)}
-                        onCancel={() => setShowTestForm(false)}
+                        editingTest={editingTest}
+                        onSuccess={() => {
+                          setShowTestForm(false);
+                          setEditingTest(null);
+                        }}
+                        onCancel={() => {
+                          setShowTestForm(false);
+                          setEditingTest(null);
+                        }}
                       />
                     </div>
                   </DialogContent>
@@ -1148,11 +1241,31 @@ export default function Admin() {
                             </div>
                             
                             {/* Action Buttons */}
-                            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-900" title="Edit Test">
+                            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 relative">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-900" 
+                                title="Edit Test"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleEditTest(test);
+                                }}
+                              >
                                 <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900" title="Delete Test">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900" 
+                                title="Delete Test"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeleteTest(test._id);
+                                }}
+                              >
                                 <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                               </Button>
                             </div>
@@ -1204,7 +1317,7 @@ export default function Admin() {
                           </div>
 
                           {/* Hover Overlay */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5 rounded-xl transition-all duration-300"></div>
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5 rounded-xl transition-all duration-300 pointer-events-none"></div>
                         </div>
                       ))}
                     </div>
@@ -1255,8 +1368,8 @@ export default function Admin() {
             </div>
           )}
 
-          {/* Grades Tab */}
-          {activeTab === "grades" && (
+          {/* Grading Tab */}
+          {activeTab === "grading" && (
             <div className="space-y-6">
               <StudentGrades />
             </div>

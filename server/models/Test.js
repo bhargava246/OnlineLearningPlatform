@@ -26,10 +26,7 @@ const testResultSchema = new mongoose.Schema({
     selectedAnswer: String,
     isCorrect: Boolean
   }],
-  timeSpent: {
-    type: Number, // in minutes
-    default: 0
-  },
+
   completedAt: {
     type: Date,
     default: Date.now
@@ -90,7 +87,7 @@ const testSchema = new mongoose.Schema({
   },
   maxScore: {
     type: Number,
-    default: 0
+    default: 100
   },
   passingScore: {
     type: Number,

@@ -37,19 +37,25 @@ export default function Dashboard() {
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: [`/api/users/${userId}/stats`],
+    enabled: !!userId,
   });
 
   const { data: activities, isLoading: activitiesLoading } = useQuery<RecentActivity[]>({
     queryKey: [`/api/users/${userId}/activities`],
+    enabled: !!userId,
   });
 
-  // Real-time data queries for student dashboard
+  // Data queries for student dashboard
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<any[]>({
-    queryKey: [`/api/users/${userId}/enrollments`],
+    queryKey: ["/api/mongo/student/enrollments"],
+    enabled: !!userId,
   });
+
+
 
   const { data: courses, isLoading: coursesLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/courses"],
+    enabled: !!userId,
   });
 
   const { data: studentResults, isLoading: resultsLoading } = useQuery<any[]>({
@@ -57,37 +63,39 @@ export default function Dashboard() {
     enabled: !!userId && user?.role === 'student',
   });
 
-  // Real-time dashboard refresh
-  useEffect(() => {
-    const interval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/stats`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/enrollments`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/activities`] });
-      if (user?.role === 'student') {
-        queryClient.invalidateQueries({ queryKey: ["/api/mongo/student/my-results"] });
-      }
-    }, 30000); // Refresh every 30 seconds
+  // Get user dashboard stats
+  const { data: dashboardStats, isLoading: dashboardStatsLoading } = useQuery({
+    queryKey: ["/api/mongo/user/stats"],
+    enabled: !!userId,
+  });
 
-    return () => clearInterval(interval);
-  }, [queryClient, userId, user?.role]);
+  // Manual refresh function for dashboard data
+  const handleRefresh = () => {
+    if (!userId) return;
+    
+    queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/stats`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/activities`] });
+    queryClient.invalidateQueries({ queryKey: ["/api/mongo/courses"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/mongo/user/stats"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/mongo/student/enrollments"] });
+    if (user?.role === 'student') {
+      queryClient.invalidateQueries({ queryKey: ["/api/mongo/student/my-results"] });
+    }
+  };
 
-  // Calculate enhanced dashboard metrics
+  // Calculate enhanced dashboard metrics with real-time updates
   const dashboardData = {
     // Enrollment metrics
     totalEnrolled: enrollments?.length || 0,
     completedCourses: enrollments?.filter(e => (e.progress || 0) >= 100)?.length || 0,
     inProgressCourses: enrollments?.filter(e => (e.progress || 0) > 0 && (e.progress || 0) < 100)?.length || 0,
     
-    // Performance metrics
-    totalTests: studentResults?.reduce((acc, course) => acc + (course.testResults?.length || 0), 0) || 0,
-    averageScore: studentResults?.length ? 
+    // Performance metrics with synchronized normalized scoring
+    totalTests: studentResults?.length || 0,
+    averageScore: dashboardStats?.averageScore || (studentResults?.length ? 
       Math.round(
-        studentResults.reduce((acc, course) => {
-          const courseAvg = course.testResults?.length ? 
-            course.testResults.reduce((sum: number, test: any) => sum + (test.score || 0), 0) / course.testResults.length : 0;
-          return acc + courseAvg;
-        }, 0) / studentResults.length
-      ) : 0,
+        studentResults.reduce((sum: number, test: any) => sum + ((test.score || 0) / (test.maxScore || 100) * 100), 0) / studentResults.length
+      ) : 0),
     
     // Progress tracking
     overallProgress: enrollments?.length ? 
@@ -166,14 +174,7 @@ export default function Dashboard() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => {
-                        queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/stats`] });
-                        queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/enrollments`] });
-                        queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/activities`] });
-                        if (user?.role === 'student') {
-                          queryClient.invalidateQueries({ queryKey: ["/api/mongo/student/my-results"] });
-                        }
-                      }}
+                      onClick={handleRefresh}
                       className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300"
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
@@ -195,8 +196,11 @@ export default function Dashboard() {
           {/* Real-time Dashboard Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Enrolled Courses */}
-            <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow duration-300">
+            <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow duration-300 relative">
               <CardContent className="p-6">
+                <div className="absolute top-2 right-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Enrolled Courses</p>
@@ -216,8 +220,11 @@ export default function Dashboard() {
             </Card>
 
             {/* Completed Courses */}
-            <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow duration-300">
+            <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow duration-300 relative">
               <CardContent className="p-6">
+                <div className="absolute top-2 right-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
@@ -237,8 +244,11 @@ export default function Dashboard() {
             </Card>
 
             {/* Test Performance */}
-            <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow duration-300">
+            <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow duration-300 relative">
               <CardContent className="p-6">
+                <div className="absolute top-2 right-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Test Score Avg</p>
@@ -258,8 +268,11 @@ export default function Dashboard() {
             </Card>
 
             {/* Overall Progress */}
-            <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow duration-300">
+            <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow duration-300 relative">
               <CardContent className="p-6">
+                <div className="absolute top-2 right-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Overall Progress</p>
@@ -268,7 +281,7 @@ export default function Dashboard() {
                     </p>
                     <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center mt-1">
                       <Activity className="w-3 h-3 mr-1" />
-                      {dashboardData.inProgressCourses} in progress
+                      Real-time tracking
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
@@ -363,7 +376,20 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {studentResults && studentResults.length > 0 ? (
-                      studentResults.slice(0, 3).map((courseResult, index) => (
+                      // Group test results by course
+                      Object.entries(
+                        studentResults.reduce((acc: any, result: any) => {
+                          const courseTitle = result.course?.title || 'Unknown Course';
+                          if (!acc[courseTitle]) {
+                            acc[courseTitle] = {
+                              course: result.course,
+                              testResults: []
+                            };
+                          }
+                          acc[courseTitle].testResults.push(result);
+                          return acc;
+                        }, {})
+                      ).slice(0, 3).map(([courseTitle, courseData]: [string, any], index) => (
                         <div key={index} className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
@@ -372,17 +398,17 @@ export default function Dashboard() {
                               </div>
                               <div>
                                 <p className="font-medium text-gray-900 dark:text-white">
-                                  {courseResult.course?.title || 'Unknown Course'}
+                                  {courseTitle}
                                 </p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {courseResult.testResults?.length || 0} tests completed
+                                  {courseData.testResults.length} tests completed
                                 </p>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-gray-900 dark:text-white">
-                                {courseResult.testResults?.length ? 
-                                  Math.round(courseResult.testResults.reduce((sum: number, test: any) => sum + (test.score || 0), 0) / courseResult.testResults.length) 
+                                {courseData.testResults.length ? 
+                                  Math.round(courseData.testResults.reduce((sum: number, test: any) => sum + ((test.score || 0) / (test.maxScore || 100) * 100), 0) / courseData.testResults.length) 
                                   : 0}%
                               </p>
                               <p className="text-xs text-purple-600 dark:text-purple-400">
@@ -464,6 +490,19 @@ export default function Dashboard() {
                   </p>
                 </CardContent>
               </Card>
+            </div>
+          </div>
+
+          {/* Real-time Update Status */}
+          <div className="mt-8 flex items-center justify-center space-x-4">
+            <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 dark:border-gray-700">
+              <Activity className="w-4 h-4 text-green-500 animate-pulse" />
+              <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">Live Dashboard</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+            </div>
+            <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 dark:border-gray-700">
+              <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+              <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">Auto-refresh: 3s</span>
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const testSchema = z.object({
   title: z.string().min(1, "Test title is required"),
@@ -18,16 +19,18 @@ const testSchema = z.object({
   timeLimit: z.number().min(1, "Time limit must be at least 1 minute"),
   passingScore: z.number().min(0).max(100, "Passing score must be between 0-100"),
   attempts: z.number().min(1, "Must allow at least 1 attempt"),
+  maxScore: z.number().min(1, "Max score must be at least 1"),
 });
 
 type TestFormData = z.infer<typeof testSchema>;
 
 interface TestFormProps {
+  editingTest?: any;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export default function TestForm({ onSuccess, onCancel }: TestFormProps) {
+export default function TestForm({ editingTest, onSuccess, onCancel }: TestFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -38,33 +41,29 @@ export default function TestForm({ onSuccess, onCancel }: TestFormProps) {
   const form = useForm<TestFormData>({
     resolver: zodResolver(testSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      courseId: "",
-      timeLimit: 60,
-      passingScore: 60,
-      attempts: 3,
+      title: editingTest?.title || "",
+      description: editingTest?.description || "",
+      courseId: editingTest?.course?._id || "",
+      timeLimit: editingTest?.timeLimit || 60,
+      passingScore: editingTest?.passingScore || 60,
+      attempts: editingTest?.attempts || 3,
+      maxScore: editingTest?.maxScore || 100,
     },
   });
 
-  const createTestMutation = useMutation({
+  const testMutation = useMutation({
     mutationFn: async (data: TestFormData) => {
-      const response = await fetch("/api/mongo/tests", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create test: ${errorText}`);
-      }
+      const url = editingTest ? `/api/mongo/tests/${editingTest._id}` : "/api/mongo/tests";
+      const method = editingTest ? "PUT" : "POST";
+      
+      const response = await apiRequest(method, url, data);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
       toast({
         title: "Success",
-        description: "Test created successfully",
+        description: editingTest ? "Test updated successfully" : "Test created successfully",
       });
       form.reset();
       onSuccess?.();
@@ -72,14 +71,14 @@ export default function TestForm({ onSuccess, onCancel }: TestFormProps) {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create test",
+        description: `Failed to ${editingTest ? 'update' : 'create'} test`,
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: TestFormData) => {
-    createTestMutation.mutate(data);
+    testMutation.mutate(data);
   };
 
   return (
@@ -93,8 +92,12 @@ export default function TestForm({ onSuccess, onCancel }: TestFormProps) {
               <span className="text-3xl">📝</span>
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-white">Create New Test</h2>
-              <p className="text-white/80 mt-1">Design engaging assessments for your students</p>
+              <h2 className="text-3xl font-bold text-white">
+                {editingTest ? "Edit Test" : "Create New Test"}
+              </h2>
+              <p className="text-white/80 mt-1">
+                {editingTest ? "Update your test settings and content" : "Design engaging assessments for your students"}
+              </p>
             </div>
           </div>
           <div className="space-x-3">
@@ -107,18 +110,18 @@ export default function TestForm({ onSuccess, onCancel }: TestFormProps) {
             </Button>
             <Button 
               onClick={form.handleSubmit(onSubmit)}
-              disabled={createTestMutation.isPending}
+              disabled={testMutation.isPending}
               className="bg-white text-blue-600 hover:bg-white/90 font-semibold shadow-lg"
             >
-              {createTestMutation.isPending ? (
+              {testMutation.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                  Creating...
+                  {editingTest ? "Updating..." : "Creating..."}
                 </>
               ) : (
                 <>
-                  <span className="mr-2">✨</span>
-                  Create Test
+                  <span className="mr-2">{editingTest ? "💾" : "✨"}</span>
+                  {editingTest ? "Update Test" : "Create Test"}
                 </>
               )}
             </Button>
@@ -295,6 +298,37 @@ export default function TestForm({ onSuccess, onCancel }: TestFormProps) {
                           />
                           <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">
                             %
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Max Score */}
+                <FormField
+                  control={form.control}
+                  name="maxScore"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-lg font-semibold text-gray-700 dark:text-gray-200 flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-yellow-100 to-orange-200 dark:from-yellow-900 dark:to-orange-800 rounded-lg flex items-center justify-center">
+                          <span className="text-yellow-600 dark:text-yellow-400">🏆</span>
+                        </div>
+                        <span>Max Score</span>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            type="number" 
+                            placeholder="100" 
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(Number(e.target.value) || 100)}
+                            className="h-12 text-lg border-2 border-gray-200 dark:border-gray-700 focus:border-yellow-500 rounded-xl bg-white dark:bg-gray-800 shadow-sm pl-4 pr-16"
+                          />
+                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">
+                            points
                           </div>
                         </div>
                       </FormControl>

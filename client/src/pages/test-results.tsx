@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, getGradeColor } from "@/lib/utils";
 import Sidebar from "@/components/sidebar";
-import { BookOpen, Calendar, Award, User, Trophy, TrendingUp, Target, CheckCircle } from "lucide-react";
+import { BookOpen, Calendar, Award, User, Trophy, TrendingUp, Target, CheckCircle, RefreshCw, Activity } from "lucide-react";
 
 export default function TestResults() {
   const { user, isAdmin } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState("all");
+  const queryClient = useQueryClient();
   
-  // Get test results based on user role
+  // Get test results based on user role (no automatic refresh)
   const { data: testResults, isLoading } = useQuery<any[]>({
     queryKey: isAdmin ? ['/api/mongo/admin/student-results'] : ['/api/mongo/student/my-results'],
     queryFn: async () => {
@@ -33,6 +34,12 @@ export default function TestResults() {
       return response.json();
     },
     enabled: !!user,
+  });
+
+  // Fetch all tests for statistics (no automatic refresh)
+  const { data: allTests, isLoading: testsLoading } = useQuery<any[]>({
+    queryKey: ["/api/mongo/tests"],
+    enabled: !!user && isAdmin,
   });
 
   if (isLoading) {
@@ -68,17 +75,64 @@ export default function TestResults() {
     )
   );
 
-  // Calculate stats for hero section
+  // Filter data based on selected course for real-time course-specific analytics
+  const filteredTestResults = isAdmin ? testResults?.map((student: any) => {
+    if (selectedCourse === "all") return student;
+    
+    return {
+      ...student,
+      testResults: student.testResults?.filter((test: any) => 
+        test.course?.title === selectedCourse
+      ) || []
+    };
+  }).filter((student: any) => 
+    selectedCourse === "all" || student.testResults?.length > 0
+  ) : null;
+
+  // Filter student results for non-admin users
+  const filteredStudentResults = !isAdmin ? testResults?.filter((result: any) => 
+    selectedCourse === "all" || result.course?.title === selectedCourse
+  ) : null;
+
+  // Calculate comprehensive real-time statistics based on selected course
   const totalTests = isAdmin 
-    ? testResults?.reduce((acc: number, student: any) => acc + (student.testResults?.length || 0), 0) || 0
-    : testResults?.length || 0;
+    ? selectedCourse === "all" 
+      ? (allTests?.length || 0)
+      : (allTests?.filter((test: any) => 
+          testResults?.some((student: any) => 
+            student.testResults?.some((t: any) => 
+              t.course?.title === selectedCourse && t.testId === test._id
+            )
+          )
+        ).length || 0)
+    : filteredStudentResults?.length || 0;
   
-  const completedTests = isAdmin
-    ? testResults?.reduce((acc: number, student: any) => 
-        acc + (student.testResults?.filter((t: any) => t.result).length || 0), 0) || 0
-    : testResults?.length || 0;
+  // Total unique students who have completed at least one test in selected course
+  const studentsCompleted = isAdmin && filteredTestResults ? new Set(
+    filteredTestResults.filter((student: any) => 
+      student.testResults?.some((t: any) => t.result)
+    ).map((student: any) => student.student._id)
+  ).size : (filteredStudentResults?.length || 0) > 0 ? 1 : 0;
   
-  const averageScore = 85; // Simplified for now
+  // Total students enrolled in the selected course (or all courses)
+  const totalStudentsInCourse = isAdmin && filteredTestResults ? filteredTestResults.length : 0;
+  
+  // Average score across all completed tests in selected course
+  const averageScore = (() => {
+    if (isAdmin && filteredTestResults) {
+      const allScores = filteredTestResults.reduce((scores: number[], student: any) => {
+        const studentScores = student.testResults?.filter((t: any) => t.result)
+          .map((t: any) => (t.result.score / t.maxScore) * 100) || [];
+        return scores.concat(studentScores);
+      }, []);
+      return allScores.length > 0 ? Math.round(allScores.reduce((sum, score) => sum + score, 0) / allScores.length) : 0;
+    } else if (!isAdmin && filteredStudentResults) {
+      // Student view: calculate average from their own filtered results
+      const studentScores = filteredStudentResults.map((result: any) => (result.score / result.maxScore) * 100);
+      return studentScores.length > 0 ? Math.round(studentScores.reduce((sum, score) => sum + score, 0) / studentScores.length) : 0;
+    }
+    return 0;
+  })();
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -101,29 +155,64 @@ export default function TestResults() {
               }
             </p>
             
-            {/* Stats Cards */}
+            {/* Real-Time Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300">
                 <CardContent className="p-6 text-center">
-                  <Target className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">{totalTests}</div>
-                  <p className="text-green-100">Total Tests</p>
+                  <div className="relative">
+                    <Target className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-2 font-mono">{totalTests}</div>
+                  <p className="text-green-100 font-medium">Total Tests</p>
+                  <p className="text-green-200/70 text-sm mt-1">
+                    {isAdmin ? "Created in system" : "Available to you"}
+                  </p>
                 </CardContent>
               </Card>
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300">
                 <CardContent className="p-6 text-center">
-                  <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">{completedTests}</div>
-                  <p className="text-green-100">Completed</p>
+                  <div className="relative">
+                    <BookOpen className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full"></div>
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-2 font-mono">
+                    {isAdmin ? studentsCompleted : (testResults?.length || 0)}
+                  </div>
+                  <p className="text-green-100 font-medium">
+                    {isAdmin ? "Students Completed" : "Tests Taken"}
+                  </p>
+                  <p className="text-green-200/70 text-sm mt-1">
+                    {isAdmin ? "Have taken tests" : "By you"}
+                  </p>
                 </CardContent>
               </Card>
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300">
                 <CardContent className="p-6 text-center">
-                  <Trophy className="w-12 h-12 text-orange-400 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-white mb-2">{Math.round(averageScore)}%</div>
-                  <p className="text-green-100">Average Score</p>
+                  <div className="relative">
+                    <Trophy className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-2 font-mono">{averageScore}%</div>
+                  <p className="text-green-100 font-medium">Average Score</p>
+                  <p className="text-green-200/70 text-sm mt-1">
+                    Across all completed tests
+                  </p>
                 </CardContent>
               </Card>
+            </div>
+            
+            {/* Manual Refresh Indicator */}
+            <div className="mt-8 flex items-center justify-center space-x-3">
+              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                <Activity className="w-4 h-4 text-green-400" />
+                <span className="text-white text-sm font-medium">Manual Refresh</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                <RefreshCw className="w-4 h-4 text-blue-400" />
+                <span className="text-white text-sm font-medium">Click to refresh</span>
+              </div>
             </div>
           </div>
         </div>
@@ -152,78 +241,115 @@ export default function TestResults() {
                     </div>
                   </div>
                   
-                  {/* Course Filter */}
-                  <div className="relative">
-                    <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                      <SelectTrigger className="w-full sm:w-56 h-12 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-2 border-white/30 dark:border-gray-600/30 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:border-emerald-500 dark:focus:border-emerald-400">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full"></div>
-                          <SelectValue />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border-white/30 dark:border-gray-600/30 rounded-xl shadow-2xl">
-                        <SelectItem value="all" className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30">
+                  {/* Course Filter and Refresh Button */}
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                        <SelectTrigger className="w-full sm:w-56 h-12 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-2 border-white/30 dark:border-gray-600/30 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:border-emerald-500 dark:focus:border-emerald-400">
                           <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                            <span>All Courses</span>
+                            <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full"></div>
+                            <SelectValue />
                           </div>
-                        </SelectItem>
-                        {uniqueCourses.map((course) => (
-                          <SelectItem key={course} value={course} className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30">
+                        </SelectTrigger>
+                        <SelectContent className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border-white/30 dark:border-gray-600/30 rounded-xl shadow-2xl">
+                          <SelectItem value="all" className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30">
                             <div className="flex items-center space-x-2">
-                              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                              <span>{course}</span>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                              <span>All Courses</span>
                             </div>
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          {uniqueCourses.map((course) => (
+                            <SelectItem key={course} value={course} className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                <span>{course}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Manual Refresh Button */}
+                    <button 
+                      onClick={() => {
+                        if (isAdmin) {
+                          queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/student-results"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
+                        } else {
+                          queryClient.invalidateQueries({ queryKey: ["/api/mongo/student/my-results"] });
+                        }
+                      }}
+                      className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group"
+                      title="Refresh data"
+                    >
+                      <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+                    </button>
                   </div>
                 </div>
                 
-                {/* Quick Stats Display */}
+                {/* Real-Time Course-Specific Stats Display */}
                 {isAdmin && testResults && (
                   <div className="mt-6 pt-6 border-t border-white/20 dark:border-gray-600/20">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                        {selectedCourse === "all" ? "Overall Statistics" : `${selectedCourse} Course Analytics`}
+                      </h3>
+                      <div className="flex items-center space-x-2 bg-white/20 dark:bg-gray-800/20 rounded-full px-3 py-1">
+                        <Activity className="w-3 h-3 text-green-400" />
+                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">Updated Data</span>
+                      </div>
+                    </div>
+                    
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800">
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800 hover:scale-105 transition-transform duration-200">
                         <div className="flex items-center space-x-3">
                           <div className="p-2 bg-blue-500 rounded-lg">
                             <User className="h-4 w-4 text-white" />
                           </div>
                           <div>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider">Total Students</p>
-                            <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
-                              {testResults.length}
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider">
+                              {selectedCourse === "all" ? "Total Students" : "Students in Course"}
+                            </p>
+                            <p className="text-lg font-bold text-blue-900 dark:text-blue-100 font-mono">
+                              {totalStudentsInCourse}
+                            </p>
+                            <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">
+                              {selectedCourse === "all" ? "Across all courses" : "Enrolled & active"}
                             </p>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 border border-green-100 dark:border-green-800">
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 border border-green-100 dark:border-green-800 hover:scale-105 transition-transform duration-200">
                         <div className="flex items-center space-x-3">
                           <div className="p-2 bg-green-500 rounded-lg">
                             <Award className="h-4 w-4 text-white" />
                           </div>
                           <div>
-                            <p className="text-xs text-green-600 dark:text-green-400 font-medium uppercase tracking-wider">Completed Tests</p>
-                            <p className="text-lg font-bold text-green-900 dark:text-green-100">
-                              {testResults.reduce((total: number, student: any) => 
-                                total + (student.testResults?.filter((t: any) => t.result).length || 0), 0
-                              )}
+                            <p className="text-xs text-green-600 dark:text-green-400 font-medium uppercase tracking-wider">Students Completed</p>
+                            <p className="text-lg font-bold text-green-900 dark:text-green-100 font-mono">
+                              {studentsCompleted}
+                            </p>
+                            <p className="text-xs text-green-500 dark:text-green-300 mt-1">
+                              {totalStudentsInCourse > 0 ? `${Math.round((studentsCompleted / totalStudentsInCourse) * 100)}% completion rate` : "No students yet"}
                             </p>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-800">
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-800 hover:scale-105 transition-transform duration-200">
                         <div className="flex items-center space-x-3">
                           <div className="p-2 bg-purple-500 rounded-lg">
-                            <BookOpen className="h-4 w-4 text-white" />
+                            <Trophy className="h-4 w-4 text-white" />
                           </div>
                           <div>
-                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium uppercase tracking-wider">Active Course</p>
-                            <p className="text-lg font-bold text-purple-900 dark:text-purple-100">
-                              {selectedCourse === "all" ? "All" : selectedCourse}
+                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium uppercase tracking-wider">Average Score</p>
+                            <p className="text-lg font-bold text-purple-900 dark:text-purple-100 font-mono">
+                              {averageScore}%
+                            </p>
+                            <p className="text-xs text-purple-500 dark:text-purple-300 mt-1">
+                              {selectedCourse === "all" ? "All courses combined" : "Course performance"}
                             </p>
                           </div>
                         </div>
@@ -238,8 +364,8 @@ export default function TestResults() {
         {/* Results Display */}
         <div className="space-y-6">
         {isAdmin ? (
-          // Admin view: Show all students and their results
-          testResults?.map((studentData: any, index: number) => (
+          // Admin view: Show filtered students and their results based on selected course
+          filteredTestResults?.map((studentData: any, index: number) => (
             <div key={studentData.student._id} className={`rounded-3xl border border-white/20 shadow-2xl overflow-hidden ${
               index % 2 === 0 
                 ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/10' 
@@ -431,11 +557,16 @@ export default function TestResults() {
               <CardTitle className="text-lg flex items-center gap-2">
                 <Award className="h-5 w-5" />
                 My Test Results
+                {selectedCourse !== "all" && (
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedCourse}
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {testResults?.map((result: any) => (
+                {filteredStudentResults?.map((result: any) => (
                   <div 
                     key={result.testId} 
                     className="p-4 rounded-lg border border-green-200 bg-green-50"
@@ -472,7 +603,12 @@ export default function TestResults() {
                 )) || (
                   <div className="text-center py-8 text-gray-500">
                     <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No test results available</p>
+                    <p>
+                      {selectedCourse === "all" 
+                        ? "No test results available" 
+                        : `No test results found for ${selectedCourse}`
+                      }
+                    </p>
                   </div>
                 )}
               </div>
@@ -482,16 +618,23 @@ export default function TestResults() {
       </div>
 
       {/* Empty state */}
-      {(!testResults || testResults.length === 0) && (
+      {(!filteredTestResults || filteredTestResults.length === 0) && (
         <Card>
           <CardContent className="py-12 text-center">
             <User className="h-12 w-12 mx-auto mb-4 text-gray-400" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {isAdmin ? "No students found" : "No test results yet"}
+              {isAdmin 
+                ? selectedCourse === "all" 
+                  ? "No students found" 
+                  : `No students found for ${selectedCourse}`
+                : "No test results yet"
+              }
             </h3>
             <p className="text-gray-500">
               {isAdmin 
-                ? "No students are available in the system" 
+                ? selectedCourse === "all"
+                  ? "No students are available in the system" 
+                  : `No students have taken tests in ${selectedCourse} course yet`
                 : "Complete some tests to see your results here"
               }
             </p>

@@ -37,7 +37,8 @@ const verifyToken = async (req, res, next) => {
   
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
+    const userId = decoded.userId || decoded.id; // Support both formats
+    const user = await User.findById(userId).select('-password');
     
     if (!user) {
       return res.status(401).json({ message: 'Invalid token. User not found.' });
@@ -45,14 +46,15 @@ const verifyToken = async (req, res, next) => {
     
     // Set both formats for compatibility
     req.user = { 
-      id: decoded.id, 
+      id: userId, 
       username: decoded.username, 
       role: decoded.role,
       dbUser: user 
     };
     next();
   } catch (error) {
-    res.status(400).json({ message: 'Invalid token.' });
+    console.error('JWT verification error:', error);
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 
@@ -336,7 +338,7 @@ router.get('/courses/:id', verifyToken, async (req, res) => {
 });
 
 // Admin: Create course with modules and notes
-router.post('/courses', requireAdmin, async (req, res) => {
+router.post('/courses', verifyToken, requireAdmin, async (req, res) => {
   try {
     const {
       title,
@@ -374,7 +376,7 @@ router.post('/courses', requireAdmin, async (req, res) => {
 });
 
 // Admin: Update course
-router.put('/courses/:id', requireAdmin, async (req, res) => {
+router.put('/courses/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const course = await Course.findByIdAndUpdate(
       req.params.id,
@@ -393,7 +395,7 @@ router.put('/courses/:id', requireAdmin, async (req, res) => {
 });
 
 // Admin: Delete course
-router.delete('/courses/:id', requireAdmin, async (req, res) => {
+router.delete('/courses/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const course = await Course.findByIdAndUpdate(
       req.params.id,
@@ -548,6 +550,148 @@ router.put('/enrollments/:studentId/:courseId/progress', async (req, res) => {
   }
 });
 
+// Public platform stats endpoint (no authentication required)
+router.get('/platform/stats', async (req, res) => {
+  try {
+    // Get total courses available
+    const totalCourses = await Course.countDocuments();
+    
+    // Get total available tests
+    const availableTests = await Test.countDocuments({ isActive: true });
+    
+    // Calculate overall average score from all test results
+    const testResults = await Test.aggregate([
+      { $match: { isActive: true } },
+      { $unwind: '$results' },
+      { $group: { _id: null, averageScore: { $avg: '$results.score' } } }
+    ]);
+    
+    const overallAverageScore = testResults.length > 0 ? Math.round(testResults[0].averageScore) : 0;
+    
+    res.json({
+      totalCourses,
+      availableTests,
+      overallAverageScore
+    });
+  } catch (error) {
+    console.error('Error fetching platform stats:', error);
+    res.status(500).json({ message: 'Failed to fetch platform stats', error: error.message });
+  }
+});
+
+// User-specific stats endpoint (requires authentication)
+router.get('/user/stats', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    
+    // Get total courses available
+    const totalCourses = await Course.countDocuments();
+    
+    // Get total available tests
+    const availableTests = await Test.countDocuments({ isActive: true });
+    
+    let averageScore = 0;
+    
+    if (userRole === 'admin') {
+      // For admin: show average score of all students using same calculation as test results page
+      const tests = await Test.find({ isActive: true }).populate('results.student');
+      const allScores = [];
+      
+      tests.forEach(test => {
+        test.results.forEach(result => {
+          if (result.score && test.maxScore) {
+            const percentage = (result.score / test.maxScore) * 100;
+            allScores.push(percentage);
+          }
+        });
+      });
+      
+      averageScore = allScores.length > 0 ? Math.round(allScores.reduce((sum, score) => sum + score, 0) / allScores.length) : 0;
+    } else {
+      // For students: show their personal average score using same calculation as test results page
+      const tests = await Test.find({ isActive: true });
+      const userScores = [];
+      
+      tests.forEach(test => {
+        const userResult = test.results.find(result => result.student.toString() === userId);
+        if (userResult && userResult.score && test.maxScore) {
+          const percentage = (userResult.score / test.maxScore) * 100;
+          userScores.push(percentage);
+        }
+      });
+      
+      averageScore = userScores.length > 0 ? Math.round(userScores.reduce((sum, score) => sum + score, 0) / userScores.length) : 0;
+    }
+    
+    res.json({
+      totalCourses,
+      availableTests,
+      averageScore,
+      userRole
+    });
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    res.status(500).json({ message: 'Failed to fetch user stats', error: error.message });
+  }
+});
+
+// Create sample enrollment for demonstration (temporary endpoint)
+router.get('/create-sample-enrollment', async (req, res) => {
+  try {
+    console.log('Creating sample enrollment...');
+    
+    // Find an existing student user
+    const user = await User.findOne({ role: 'student' });
+    console.log('Found user:', user ? `${user.firstName} ${user.lastName}` : 'None');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'No student user found' });
+    }
+    
+    // Find an existing course
+    const course = await Course.findOne();
+    console.log('Found course:', course ? course.title : 'None');
+    
+    if (!course) {
+      return res.status(404).json({ message: 'No course found' });
+    }
+    
+    // Check if enrollment already exists
+    const existingEnrollment = await Enrollment.findOne({
+      student: user._id,
+      course: course._id
+    });
+    
+    if (existingEnrollment) {
+      console.log('Enrollment already exists');
+      return res.json({ message: 'Enrollment already exists', alreadyExists: true });
+    }
+    
+    // Create enrollment
+    const enrollment = new Enrollment({
+      student: user._id,
+      course: course._id,
+      progress: 25
+    });
+    
+    await enrollment.save();
+    console.log('Enrollment created successfully');
+    
+    res.json({
+      message: 'Sample enrollment created successfully',
+      enrollment: {
+        student: user.firstName + ' ' + user.lastName,
+        course: course.title,
+        progress: enrollment.progress
+      }
+    });
+  } catch (error) {
+    console.error('Error creating sample enrollment:', error);
+    res.status(500).json({ message: 'Failed to create sample enrollment', error: error.message });
+  }
+});
+
 // User stats - students can only see their own stats
 router.get('/users/:id/stats', filterStudentData, async (req, res) => {
   try {
@@ -620,7 +764,7 @@ router.get('/tests/:id', async (req, res) => {
 });
 
 // Admin: Create test
-router.post('/tests', requireAdmin, async (req, res) => {
+router.post('/tests', verifyToken, requireAdmin, async (req, res) => {
   try {
     const {
       title,
@@ -629,7 +773,8 @@ router.post('/tests', requireAdmin, async (req, res) => {
       questions,
       timeLimit,
       passingScore,
-      attempts
+      attempts,
+      maxScore
     } = req.body;
 
     const test = new Test({
@@ -639,7 +784,8 @@ router.post('/tests', requireAdmin, async (req, res) => {
       questions: questions || [],
       timeLimit: timeLimit || 60,
       passingScore: passingScore || 60,
-      attempts: attempts || 3
+      attempts: attempts || 3,
+      maxScore: maxScore || 100
     });
 
     await test.save();
@@ -651,11 +797,64 @@ router.post('/tests', requireAdmin, async (req, res) => {
   }
 });
 
+// Admin: Update test
+router.put('/tests/:id', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      description,
+      courseId,
+      questions,
+      timeLimit,
+      passingScore,
+      attempts,
+      maxScore
+    } = req.body;
+
+    const test = await Test.findByIdAndUpdate(id, {
+      title,
+      description,
+      course: courseId,
+      questions: questions || [],
+      timeLimit: timeLimit || 60,
+      passingScore: passingScore || 60,
+      attempts: attempts || 3,
+      maxScore: maxScore || 100
+    }, { new: true }).populate('course', 'title category');
+
+    if (!test) {
+      return res.status(404).json({ message: 'Test not found' });
+    }
+
+    res.json(test);
+  } catch (error) {
+    res.status(400).json({ message: 'Failed to update test', error: error.message });
+  }
+});
+
+// Admin: Delete test
+router.delete('/tests/:id', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const test = await Test.findByIdAndDelete(id);
+    
+    if (!test) {
+      return res.status(404).json({ message: 'Test not found' });
+    }
+    
+    res.json({ message: 'Test deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete test', error: error.message });
+  }
+});
+
 // Admin: Add/Update test result for a student
-router.post('/tests/:testId/results', async (req, res) => {
+router.post('/tests/:testId/results', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { testId } = req.params;
-    const { studentId, score, grade, answers, timeSpent } = req.body;
+    const { studentId, score, grade, answers, maxScore } = req.body;
 
     // Validate required fields
     if (!studentId || score === undefined || !grade) {
@@ -681,10 +880,9 @@ router.post('/tests/:testId/results', async (req, res) => {
     const resultData = {
       student: studentId,
       score: Number(score),
-      maxScore: test.maxScore || 100,
+      maxScore: Number(maxScore) || test.maxScore || 100,
       grade,
       answers: answers || [],
-      timeSpent: Number(timeSpent) || 0,
       completedAt: new Date()
     };
 
@@ -724,7 +922,7 @@ router.get('/students/by-username/:username', async (req, res) => {
   }
 });
 
-// Get student's own test results
+// Get student's own test results (only for enrolled courses)
 router.get('/student/my-results', verifyToken, async (req, res) => {
   try {
     const currentUser = req.user?.dbUser;
@@ -732,7 +930,20 @@ router.get('/student/my-results', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'Student access required' });
     }
     
-    const tests = await Test.find({ isActive: true })
+    // Get student's enrolled courses from both enrollment collections and user's enrolledCourses array
+    const enrollments = await Enrollment.find({ student: currentUser._id }).select('course');
+    const enrollmentCourseIds = enrollments.map(e => e.course.toString());
+    const userEnrolledCourses = currentUser.enrolledCourses || [];
+    const allEnrolledCourseIds = [...enrollmentCourseIds, ...userEnrolledCourses.map(id => id.toString())];
+    
+    // Remove duplicates
+    const uniqueEnrolledCourseIds = [...new Set(allEnrolledCourseIds)];
+    
+    // Only get tests for courses the student is enrolled in
+    const tests = await Test.find({ 
+      isActive: true,
+      course: { $in: uniqueEnrolledCourseIds }
+    })
       .populate('course', 'title category')
       .select('title course results maxScore');
     
@@ -751,8 +962,7 @@ router.get('/student/my-results', verifyToken, async (req, res) => {
           maxScore: test.maxScore,
           score: result.score,
           grade: result.grade,
-          completedAt: result.completedAt,
-          timeSpent: result.timeSpent
+          completedAt: result.completedAt
         });
       }
     });
@@ -763,17 +973,129 @@ router.get('/student/my-results', verifyToken, async (req, res) => {
   }
 });
 
-// Get all students with their test results for admin
+// Get student's own enrollments
+router.get('/student/enrollments', verifyToken, async (req, res) => {
+  // Disable caching to ensure fresh requests
+  res.set('Cache-Control', 'no-cache');
+  try {
+    const currentUser = req.user?.dbUser;
+    
+    if (!currentUser || currentUser.role !== 'student') {
+      return res.status(403).json({ message: 'Student access required' });
+    }
+    
+    const enrollments = await Enrollment.find({ student: currentUser._id })
+      .populate('course', 'title category description thumbnail')
+      .select('course progress enrollmentDate completionDate isCompleted');
+    
+    res.json(enrollments);
+  } catch (error) {
+    console.error('Error fetching enrollments:', error);
+    res.status(500).json({ message: 'Failed to fetch enrollments', error: error.message });
+  }
+});
+
+// Create enrollment for current user
+router.post('/student/enroll/:courseId', verifyToken, async (req, res) => {
+  try {
+    const currentUser = req.user?.dbUser;
+    if (!currentUser || currentUser.role !== 'student') {
+      return res.status(403).json({ message: 'Student access required' });
+    }
+    
+    const courseId = req.params.courseId;
+    
+    // Check if enrollment already exists
+    const existingEnrollment = await Enrollment.findOne({
+      student: currentUser._id,
+      course: courseId
+    });
+    
+    if (existingEnrollment) {
+      return res.json({ message: 'Already enrolled', enrollment: existingEnrollment });
+    }
+    
+    // Create enrollment
+    const enrollment = new Enrollment({
+      student: currentUser._id,
+      course: courseId,
+      progress: 0,
+      enrollmentDate: new Date(),
+      isCompleted: false
+    });
+    
+    await enrollment.save();
+    console.log('New enrollment created for user:', currentUser.firstName, currentUser.lastName);
+    
+    res.json({ message: 'Enrollment created successfully', enrollment });
+  } catch (error) {
+    console.error('Error creating enrollment:', error);
+    res.status(500).json({ message: 'Failed to create enrollment', error: error.message });
+  }
+});
+
+// Sync user enrolledCourses with Enrollment documents
+router.post('/student/sync-enrollments', verifyToken, async (req, res) => {
+  try {
+    const currentUser = req.user?.dbUser;
+    if (!currentUser || currentUser.role !== 'student') {
+      return res.status(403).json({ message: 'Student access required' });
+    }
+    
+    console.log('Syncing enrollments for user:', currentUser.firstName, currentUser.lastName);
+    console.log('User enrolledCourses array:', currentUser.enrolledCourses);
+    
+    const syncedEnrollments = [];
+    
+    for (const courseId of currentUser.enrolledCourses) {
+      // Check if enrollment document exists
+      const existingEnrollment = await Enrollment.findOne({
+        student: currentUser._id,
+        course: courseId
+      });
+      
+      if (!existingEnrollment) {
+        // Create missing enrollment document
+        const enrollment = new Enrollment({
+          student: currentUser._id,
+          course: courseId,
+          progress: 25,
+          enrollmentDate: new Date(),
+          isCompleted: false,
+          completedModules: []
+        });
+        
+        await enrollment.save();
+        console.log('Created enrollment for course:', courseId);
+        syncedEnrollments.push(enrollment);
+      }
+    }
+    
+    res.json({ 
+      message: 'Enrollments synced successfully',
+      created: syncedEnrollments.length,
+      enrollments: syncedEnrollments
+    });
+  } catch (error) {
+    console.error('Error syncing enrollments:', error);
+    res.status(500).json({ message: 'Failed to sync enrollments', error: error.message });
+  }
+});
+
+// Get all students with their test results for admin (shows all students who have given tests)
 router.get('/admin/student-results', verifyToken, requireAdmin, async (req, res) => {
   try {
     const students = await User.find({ role: 'student', isActive: true })
-      .select('firstName lastName email');
+      .select('firstName lastName email enrolledCourses');
     
     const tests = await Test.find({ isActive: true })
       .populate('course', 'title category')
       .select('title course results maxScore');
     
-    const studentResults = students.map(student => {
+    const studentResults = [];
+    
+    for (const student of students) {
+      // Get all test results for this student (not filtered by enrollment)
       const testResults = tests.map(test => {
         const result = test.results.find(
           r => r.student.toString() === student._id.toString()
@@ -788,15 +1110,54 @@ router.get('/admin/student-results', verifyToken, requireAdmin, async (req, res)
         };
       });
       
-      return {
-        student,
-        testResults
-      };
-    });
+      // Only include students who have taken at least one test (have actual results)
+      const completedTests = testResults.filter(test => test.result !== null);
+      if (completedTests.length > 0) {
+        studentResults.push({
+          student,
+          testResults
+        });
+      }
+    }
     
     res.json(studentResults);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch student results', error: error.message });
+  }
+});
+
+// Admin: Get students enrolled in a specific course
+router.get('/admin/course/:courseId/students', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    // Find students enrolled through both methods:
+    // 1. Traditional enrollment records
+    const enrollments = await Enrollment.find({ course: courseId })
+      .populate('student', 'firstName lastName email _id role')
+      .select('student');
+    
+    // 2. Users with this course in their enrolledCourses array (from approval system)
+    const usersWithCourse = await User.find({ 
+      enrolledCourses: courseId,
+      role: 'student',
+      isApproved: true
+    }).select('firstName lastName email _id role');
+    
+    // Combine and deduplicate students
+    const enrollmentStudents = enrollments.map(enrollment => enrollment.student)
+      .filter(student => student && student.role === 'student');
+    
+    const allStudents = [...enrollmentStudents, ...usersWithCourse];
+    
+    // Remove duplicates based on _id
+    const uniqueStudents = allStudents.filter((student, index, self) => 
+      index === self.findIndex(s => s._id.toString() === student._id.toString())
+    );
+    
+    res.json(uniqueStudents);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch course students', error: error.message });
   }
 });
 
@@ -874,6 +1235,10 @@ router.get('/admin/stats', async (req, res) => {
     
     const totalEnrollments = enrollments.length;
     
+    // Calculate unique students enrolled (distinct student IDs in enrollments)
+    const uniqueStudentIds = new Set(enrollments.map(e => e.student._id.toString()));
+    const uniqueStudentsEnrolled = uniqueStudentIds.size;
+    
     // Calculate average completion rate
     let totalProgress = 0;
     let enrollmentCount = 0;
@@ -911,6 +1276,7 @@ router.get('/admin/stats', async (req, res) => {
       totalCourses,
       totalStudents: totalStudents,
       studentsEnrolled: totalEnrollments,
+      uniqueStudentsEnrolled: uniqueStudentsEnrolled,
       averageScore,
       averageCompletion,
       courseCompletionRate,
@@ -1046,6 +1412,162 @@ router.put('/admin/users/:id/courses', verifyToken, requireAdmin, async (req, re
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update user courses', error: error.message });
+  }
+});
+
+// Module completion routes
+router.post('/courses/:courseId/modules/:moduleId/complete', verifyToken, async (req, res) => {
+  try {
+    const { courseId, moduleId } = req.params;
+    const userId = req.user.id;
+
+    // Find the course and module
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const module = course.modules.id(moduleId);
+    if (!module) {
+      return res.status(404).json({ message: 'Module not found' });
+    }
+
+    // Check if user is enrolled in the course
+    const enrollment = await Enrollment.findOne({
+      student: userId,
+      course: courseId
+    });
+    
+    if (!enrollment) {
+      return res.status(403).json({ message: 'Not enrolled in this course' });
+    }
+
+    // Check if module is already completed by this user
+    const isCompleted = module.completedBy.some(completion => 
+      completion.userId.toString() === userId
+    );
+
+    if (isCompleted) {
+      return res.status(400).json({ message: 'Module already completed' });
+    }
+
+    // Mark module as completed
+    module.completedBy.push({
+      userId: userId,
+      completedAt: new Date()
+    });
+
+    // Add module to enrollment's completed modules if not already there
+    if (!enrollment.completedModules.includes(moduleId)) {
+      enrollment.completedModules.push(moduleId);
+    }
+
+    // Update enrollment progress
+    const totalModules = course.modules.length;
+    const completedModules = enrollment.completedModules.length;
+    enrollment.progress = Math.round((completedModules / totalModules) * 100);
+
+    await course.save();
+    await enrollment.save();
+
+    res.json({ 
+      message: 'Module marked as completed',
+      progress: enrollment.progress,
+      isCompleted: true
+    });
+
+  } catch (error) {
+    console.error('Error completing module:', error);
+    res.status(500).json({ message: 'Failed to complete module', error: error.message });
+  }
+});
+
+router.delete('/courses/:courseId/modules/:moduleId/complete', verifyToken, async (req, res) => {
+  try {
+    const { courseId, moduleId } = req.params;
+    const userId = req.user.id;
+
+    // Find the course and module
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const module = course.modules.id(moduleId);
+    if (!module) {
+      return res.status(404).json({ message: 'Module not found' });
+    }
+
+    // Check if user is enrolled in the course
+    const enrollment = await Enrollment.findOne({
+      student: userId,
+      course: courseId
+    });
+    
+    if (!enrollment) {
+      return res.status(403).json({ message: 'Not enrolled in this course' });
+    }
+
+    // Remove completion record
+    module.completedBy = module.completedBy.filter(completion => 
+      completion.userId.toString() !== userId
+    );
+
+    // Remove module from enrollment's completed modules
+    enrollment.completedModules = enrollment.completedModules.filter(
+      id => id.toString() !== moduleId
+    );
+
+    // Update enrollment progress
+    const totalModules = course.modules.length;
+    const completedModules = enrollment.completedModules.length;
+    enrollment.progress = Math.round((completedModules / totalModules) * 100);
+
+    await course.save();
+    await enrollment.save();
+
+    res.json({ 
+      message: 'Module completion removed',
+      progress: enrollment.progress,
+      isCompleted: false
+    });
+
+  } catch (error) {
+    console.error('Error uncompleting module:', error);
+    res.status(500).json({ message: 'Failed to uncomplete module', error: error.message });
+  }
+});
+
+// Get module completion status for a user
+router.get('/courses/:courseId/modules/:moduleId/completion', verifyToken, async (req, res) => {
+  try {
+    const { courseId, moduleId } = req.params;
+    const userId = req.user.id;
+
+    // Find the course and module
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const module = course.modules.id(moduleId);
+    if (!module) {
+      return res.status(404).json({ message: 'Module not found' });
+    }
+
+    // Check if module is completed by this user
+    const completion = module.completedBy.find(completion => 
+      completion.userId.toString() === userId
+    );
+
+    res.json({
+      isCompleted: !!completion,
+      completedAt: completion?.completedAt || null
+    });
+
+  } catch (error) {
+    console.error('Error getting module completion:', error);
+    res.status(500).json({ message: 'Failed to get module completion', error: error.message });
   }
 });
 
