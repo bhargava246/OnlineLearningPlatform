@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +46,7 @@ export default function Admin() {
     totalStudents: number;
     studentsEnrolled: number;
     uniqueStudentsEnrolled?: number;
+    approvedEnrolledStudents: number;
     averageScore: number;
     averageCompletion: number;
     courseCompletionRate: number;
@@ -73,8 +74,6 @@ export default function Admin() {
 
   const { data: studentResults, isLoading: resultsLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/admin/student-results"],
-    refetchInterval: 3000, // Refresh every 3 seconds for real-time data
-    refetchIntervalInBackground: true,
   });
 
   const { data: pendingApprovals, isLoading: approvalsLoading } = useQuery<any[]>({
@@ -118,17 +117,7 @@ export default function Admin() {
     }
   };
 
-  // Real-time analytics data refresh
-  useEffect(() => {
-    const interval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/student-results"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/pending-approvals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/users"] });
-    }, 30000); // Refresh every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [queryClient]);
+  // Manual refresh functionality - no automatic intervals
 
   // Calculate additional analytics metrics
   const analyticsData = {
@@ -208,9 +197,9 @@ export default function Admin() {
 
   if (statsLoading && activeTab === "analytics") {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 p-8">
+        <main className="ml-64 min-h-screen p-8">
           <div className="mb-6">
             <Skeleton className="h-8 w-48 mb-2" />
             <Skeleton className="h-6 w-64" />
@@ -226,9 +215,9 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900">
       <Sidebar />
-      <main className="flex-1 flex flex-col">
+      <main className="ml-64 min-h-screen flex flex-col">
         {/* Enhanced Admin Header */}
         <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 overflow-hidden">
           {/* Background decorations */}
@@ -255,21 +244,21 @@ export default function Admin() {
               <div className="hidden lg:flex space-x-4">
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30 relative">
                   <div className="absolute top-2 right-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-blue-400 rounded-full " />
                   </div>
-                  <div className="text-2xl font-bold text-white">{adminStats?.totalCourses || 0}</div>
-                  <div className="text-blue-100 text-sm font-medium">Total Courses</div>
+                  <div className="text-2xl font-bold text-white">{adminStats?.activeCourses || 0}</div>
+                  <div className="text-blue-100 text-sm font-medium">Active Courses</div>
                 </div>
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30 relative">
                   <div className="absolute top-2 right-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-blue-400 rounded-full " />
                   </div>
-                  <div className="text-2xl font-bold text-white">{adminStats?.uniqueStudentsEnrolled || adminStats?.totalStudents || 0}</div>
-                  <div className="text-blue-100 text-sm font-medium">Unique Students</div>
+                  <div className="text-2xl font-bold text-white">{adminStats?.studentsEnrolled || 0}</div>
+                  <div className="text-blue-100 text-sm font-medium">Students Enrolled</div>
                 </div>
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center min-w-[120px] border border-white/30 relative">
                   <div className="absolute top-2 right-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-blue-400 rounded-full " />
                   </div>
                   <div className="text-2xl font-bold text-white">{adminStats?.averageScore || 0}%</div>
                   <div className="text-blue-100 text-sm font-medium">Avg Score</div>
@@ -365,73 +354,140 @@ export default function Admin() {
           </div>
         </div>
         
-        {/* Enhanced Content Area */}
-        <div className="flex-1 overflow-auto p-8 bg-gradient-to-br from-gray-50/50 to-white/50 dark:from-gray-900/50 dark:to-gray-800/50">
+        {/* Ultra-Enhanced Content Area with Advanced Styling */}
+        <div className="flex-1 overflow-auto relative">
+          {/* Animated Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-900 dark:via-blue-900/20 dark:to-indigo-900/10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]"></div>
+            <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_49%,rgba(255,255,255,0.03)_50%,transparent_51%)] bg-[length:20px_20px]"></div>
+          </div>
+          
+          {/* Floating Decorative Elements */}
+          <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-br from-pink-400/20 to-rose-400/20 rounded-full blur-xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-gradient-to-br from-cyan-400/20 to-teal-400/20 rounded-full blur-lg animate-pulse delay-500"></div>
+          
+          {/* Main Content Container */}
+          <div className="relative z-10 p-8 space-y-8">
           {/* Tab Content Based on Active Tab */}
           {activeTab === "analytics" && (
             <div className="space-y-8">
-              {/* Enhanced Analytics Header */}
-              <div className="rounded-3xl border border-white/20 shadow-2xl overflow-hidden bg-gradient-to-r from-blue-50/50 via-indigo-50/50 to-purple-50/50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20">
-                <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-                <div className="bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm">
-                  <div className="p-8">
-                    <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
-                      <div className="flex items-center space-x-6">
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                          <BarChart3 className="w-10 h-10 text-white" />
+              {/* Ultra-Enhanced Analytics Header with Advanced Styling */}
+              <div className="relative group">
+                {/* Animated Background Glow */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-3xl blur-xl opacity-25 group-hover:opacity-40 transition-opacity duration-500 animate-pulse"></div>
+                
+                {/* Main Header Container */}
+                <div className="relative rounded-3xl border border-white/20 shadow-2xl overflow-hidden bg-gradient-to-br from-white/90 via-blue-50/80 to-purple-50/60 dark:from-gray-900/90 dark:via-blue-900/30 dark:to-purple-900/20 backdrop-blur-xl">
+                  {/* Animated Top Border */}
+                  <div className="h-2 bg-gradient-to-r from-blue-500 via-indigo-500 via-purple-500 to-pink-500 relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                  </div>
+                  
+                  {/* Content Section */}
+                  <div className="relative bg-gradient-to-r from-white/20 via-white/10 to-white/5 backdrop-blur-sm">
+                    {/* Floating Decorative Elements */}
+                    <div className="absolute top-4 right-8 w-12 h-12 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-lg animate-pulse"></div>
+                    <div className="absolute bottom-4 left-8 w-8 h-8 bg-gradient-to-br from-pink-400/20 to-rose-400/20 rounded-full blur-md animate-pulse delay-700"></div>
+                    
+                    <div className="p-10">
+                      <div className="flex flex-col lg:flex-row gap-8 justify-between items-start lg:items-center">
+                        <div className="flex items-center space-x-8">
+                          {/* Enhanced Icon Container */}
+                          <div className="relative group/icon">
+                            <div className="absolute -inset-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl blur-lg opacity-20 group-hover/icon:opacity-40 transition-opacity duration-300"></div>
+                            <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl transform group-hover/icon:scale-105 transition-transform duration-300">
+                              <BarChart3 className="w-12 h-12 text-white drop-shadow-lg" />
+                              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl"></div>
+                            </div>
+                          </div>
+                          
+                          {/* Enhanced Title Section */}
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-4">
+                              <h2 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent">
+                                Platform Analytics
+                              </h2>
+                              <div className="px-3 py-1 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-full border border-blue-200 dark:border-blue-700">
+                                <span className="text-blue-700 dark:text-blue-300 text-sm font-bold flex items-center space-x-1">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                  <span>Live Dashboard</span>
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-300 text-xl font-medium max-w-md">
+                              Advanced insights and real-time analytics for your educational platform
+                            </p>
+                            <div className="flex items-center space-x-4 text-sm">
+                              <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="font-medium">Real-time Data</span>
+                              </div>
+                              <div className="flex items-center space-x-1 text-blue-600 dark:text-blue-400">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-300"></div>
+                                <span className="font-medium">Interactive Charts</span>
+                              </div>
+                              <div className="flex items-center space-x-1 text-purple-600 dark:text-purple-400">
+                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse delay-500"></div>
+                                <span className="font-medium">Advanced Metrics</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                            Real-Time Analytics
-                          </h2>
-                          <p className="text-gray-600 dark:text-gray-300 text-lg">
-                            Live insights into your learning platform performance
-                          </p>
+                        
+                        {/* Enhanced Controls Section */}
+                        <div className="flex flex-col space-y-4">
+                          <div className="flex items-center space-x-4">
+                            <div className="relative group/status">
+                              <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl blur opacity-20 group-hover/status:opacity-40 transition-opacity duration-300"></div>
+                              <div className="relative flex items-center space-x-3 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 px-6 py-3 rounded-xl border border-green-200/50 dark:border-green-800/50 backdrop-blur-sm">
+                                <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-blue-500 rounded-full animate-pulse shadow-lg"></div>
+                                <span className="text-green-800 dark:text-green-200 font-bold">Manual Refresh Mode</span>
+                                <div className="px-2 py-1 bg-white/50 dark:bg-gray-800/50 rounded-md text-xs font-medium text-gray-600 dark:text-gray-400">
+                                  Click to update
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="lg"
+                            onClick={() => {
+                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/stats"] });
+                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/student-results"] });
+                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/users"] });
+                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/courses"] });
+                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
+                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/pending-approvals"] });
+                              toast({
+                                title: "Analytics Refreshed",
+                                description: "All platform data has been updated successfully",
+                              });
+                            }}
+                            className="relative group/refresh bg-gradient-to-r from-white/90 to-blue-50/90 dark:from-gray-800/90 dark:to-blue-900/30 border-gray-200/50 dark:border-gray-700/50 hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/30 backdrop-blur-sm font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                          >
+                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-0 group-hover/refresh:opacity-20 transition-opacity duration-300"></div>
+                            <RefreshCw className="w-5 h-5 mr-3 group-hover/refresh:rotate-180 transition-transform duration-500" />
+                            Refresh Analytics
+                          </Button>
                         </div>
-                      </div>
-                      
-                      {/* Real-time Indicator */}
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2 bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-xl border border-green-200 dark:border-green-800">
-                          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                          <span className="text-green-800 dark:text-green-200 text-sm font-medium">Live Data</span>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/stats"] });
-                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/student-results"] });
-                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/users"] });
-                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/courses"] });
-                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
-                            queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/pending-approvals"] });
-                            toast({
-                              title: "Data Refreshed",
-                              description: "All analytics data has been updated",
-                            });
-                          }}
-                          className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300"
-                        >
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Refresh Now
-                        </Button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Real-time Metrics Grid */}
+              {/* Platform Metrics Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Total Users */}
                 <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow duration-300">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Courses</p>
+                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Active Courses</p>
                         <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-                          {adminStats?.totalCourses || 0}
+                          {adminStats?.activeCourses || 0}
                         </p>
                         
                       </div>
@@ -447,9 +503,9 @@ export default function Admin() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-green-600 dark:text-green-400">Unique Students Enrolled</p>
+                        <p className="text-sm font-medium text-green-600 dark:text-green-400">Total Students Enrolled</p>
                         <p className="text-3xl font-bold text-green-900 dark:text-green-100">
-                          {adminStats?.uniqueStudentsEnrolled || adminStats?.totalStudents || 0}
+                          {adminStats?.studentsEnrolled || 0}
                         </p>
                         
                       </div>
@@ -524,7 +580,7 @@ export default function Admin() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl relative">
                           <div className="absolute top-2 right-2">
-                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                            <div className="w-2 h-2 bg-blue-400 rounded-full " />
                           </div>
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -533,7 +589,7 @@ export default function Admin() {
                             <div>
                               <div className="flex items-center space-x-1">
                                 <p className="text-sm text-gray-600 dark:text-gray-400">Active Users</p>
-                                <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
+                                <div className="w-1 h-1 bg-blue-500 rounded-full " />
                               </div>
                               <p className="text-xl font-bold text-gray-900 dark:text-white">{adminStats?.totalStudents || analyticsData.totalActiveUsers}</p>
                               <p className="text-xs text-blue-600 dark:text-blue-400">Live count</p>
@@ -542,7 +598,7 @@ export default function Admin() {
                         </div>
                         <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl relative">
                           <div className="absolute top-2 right-2">
-                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                            <div className="w-2 h-2 bg-blue-400 rounded-full " />
                           </div>
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
@@ -551,7 +607,7 @@ export default function Admin() {
                             <div>
                               <div className="flex items-center space-x-1">
                                 <p className="text-sm text-gray-600 dark:text-gray-400">New This Week</p>
-                                <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
+                                <div className="w-1 h-1 bg-green-500 rounded-full " />
                               </div>
                               <p className="text-xl font-bold text-gray-900 dark:text-white">{analyticsData.recentActivity.newUsers}</p>
                               <p className="text-xs text-green-600 dark:text-green-400">Weekly growth</p>
@@ -565,11 +621,11 @@ export default function Admin() {
                         <h4 className="font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
                           <PieChart className="w-4 h-4" />
                           <span>Course Distribution</span>
-                          <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
+                          <div className="w-1 h-1 bg-blue-500 rounded-full " />
                         </h4>
                         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl relative">
                           <div className="absolute top-2 right-2">
-                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                            <div className="w-2 h-2 bg-blue-400 rounded-full " />
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-600 dark:text-gray-400">Total Categories</span>
@@ -577,12 +633,12 @@ export default function Admin() {
                           </div>
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-sm text-gray-600 dark:text-gray-400">Active Courses</span>
-                            <span className="font-bold text-gray-900 dark:text-white">{adminStats?.totalCourses || analyticsData.activeCourses}</span>
+                            <span className="font-bold text-gray-900 dark:text-white">{adminStats?.activeCourses || 0}</span>
                           </div>
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-xs text-gray-500 dark:text-gray-500">Live Updates</span>
                             <div className="flex items-center space-x-1">
-                              <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
+                              <div className="w-1 h-1 bg-green-500 rounded-full " />
                               <span className="text-xs text-green-600 dark:text-green-400">Active</span>
                             </div>
                           </div>
@@ -615,7 +671,7 @@ export default function Admin() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl relative">
                           <div className="absolute top-2 right-2">
-                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                            <div className="w-2 h-2 bg-blue-400 rounded-full " />
                           </div>
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
@@ -624,16 +680,16 @@ export default function Admin() {
                             <div>
                               <div className="flex items-center space-x-1">
                                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Tests</p>
-                                <div className="w-1 h-1 bg-purple-500 rounded-full animate-pulse" />
+                                <div className="w-1 h-1 bg-purple-500 rounded-full" />
                               </div>
                               <p className="text-xl font-bold text-gray-900 dark:text-white">{adminStats?.testsCompleted || analyticsData.totalTestResults}</p>
-                              <p className="text-xs text-purple-600 dark:text-purple-400">Live data</p>
+                              <p className="text-xs text-purple-600 dark:text-purple-400">Manual refresh</p>
                             </div>
                           </div>
                         </div>
                         <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 p-4 rounded-xl relative">
                           <div className="absolute top-2 right-2">
-                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                            <div className="w-2 h-2 bg-blue-400 rounded-full" />
                           </div>
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
@@ -642,7 +698,7 @@ export default function Admin() {
                             <div>
                               <div className="flex items-center space-x-1">
                                 <p className="text-sm text-gray-600 dark:text-gray-400">Avg Score</p>
-                                <div className="w-1 h-1 bg-orange-500 rounded-full animate-pulse" />
+                                <div className="w-1 h-1 bg-orange-500 rounded-full " />
                               </div>
                               <p className="text-xl font-bold text-gray-900 dark:text-white">{adminStats?.averageScore || analyticsData.averageTestScore}%</p>
                               <p className="text-xs text-orange-600 dark:text-orange-400">Real-time avg</p>
@@ -805,7 +861,7 @@ export default function Admin() {
                           <div className="flex items-center space-x-2">
                             <BookOpen className="h-4 w-4 text-orange-600" />
                             <span className="text-sm font-bold text-orange-800 dark:text-orange-200">
-                              {(courses as any[])?.length || 0} Total Courses
+                              {(courses as any[])?.length || 0} Active Courses
                             </span>
                           </div>
                         </div>
@@ -848,7 +904,7 @@ export default function Admin() {
                                 
                                 {/* Status Indicator */}
                                 <div className="flex items-center space-x-2">
-                                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                  <div className="w-3 h-3 bg-green-500 rounded-full "></div>
                                   <span className="text-sm font-medium text-green-600 dark:text-green-400">Ready</span>
                                 </div>
                               </div>
@@ -964,7 +1020,7 @@ export default function Admin() {
                     <div className="p-8">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {[...Array(6)].map((_, i) => (
-                          <div key={i} className="rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 p-6 animate-pulse">
+                          <div key={i} className="rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 p-6 ">
                             <div className="aspect-video bg-gray-300 dark:bg-gray-600 rounded-xl mb-4"></div>
                             <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded mb-3"></div>
                             <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded mb-2"></div>
@@ -1311,7 +1367,7 @@ export default function Admin() {
                             
                             {/* Status Indicator */}
                             <div className="flex items-center space-x-1">
-                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                              <div className="w-2 h-2 bg-green-500 rounded-full "></div>
                               <span className="text-xs text-green-600 dark:text-green-400 font-medium">Active</span>
                             </div>
                           </div>
@@ -1374,6 +1430,7 @@ export default function Admin() {
               <StudentGrades />
             </div>
           )}
+          </div>
         </div>
       </main>
     </div>

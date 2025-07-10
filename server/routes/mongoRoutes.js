@@ -553,8 +553,8 @@ router.put('/enrollments/:studentId/:courseId/progress', async (req, res) => {
 // Public platform stats endpoint (no authentication required)
 router.get('/platform/stats', async (req, res) => {
   try {
-    // Get total courses available
-    const totalCourses = await Course.countDocuments();
+    // Get total active courses available
+    const totalCourses = await Course.countDocuments({ isActive: true });
     
     // Get total available tests
     const availableTests = await Test.countDocuments({ isActive: true });
@@ -585,8 +585,8 @@ router.get('/user/stats', verifyToken, async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
     
-    // Get total courses available
-    const totalCourses = await Course.countDocuments();
+    // Get total active courses available
+    const totalCourses = await Course.countDocuments({ isActive: true });
     
     // Get total available tests
     const availableTests = await Test.countDocuments({ isActive: true });
@@ -594,8 +594,18 @@ router.get('/user/stats', verifyToken, async (req, res) => {
     let averageScore = 0;
     
     if (userRole === 'admin') {
-      // For admin: show average score of all students using same calculation as test results page
-      const tests = await Test.find({ isActive: true }).populate('results.student');
+      // For admin: provide comprehensive platform statistics
+      const totalStudents = await User.countDocuments({ role: 'student', isActive: true });
+      
+      // Calculate overall student progress average
+      const allEnrollments = await Enrollment.find({});
+      const totalProgress = allEnrollments.reduce((sum, enrollment) => sum + (enrollment.progress || 0), 0);
+      const overallProgressAverage = allEnrollments.length > 0 
+        ? Math.round(totalProgress / allEnrollments.length) 
+        : 0;
+      
+      // Calculate average test score of all students
+      const tests = await Test.find({ isActive: true });
       const allScores = [];
       
       tests.forEach(test => {
@@ -608,6 +618,48 @@ router.get('/user/stats', verifyToken, async (req, res) => {
       });
       
       averageScore = allScores.length > 0 ? Math.round(allScores.reduce((sum, score) => sum + score, 0) / allScores.length) : 0;
+      
+      // Get all students with test results for progress tracking
+      const studentsWithTests = await User.find({ role: 'student', isActive: true });
+      const studentProgressData = [];
+      
+      for (const student of studentsWithTests) {
+        const studentEnrollments = await Enrollment.find({ student: student._id });
+        const avgProgress = studentEnrollments.length > 0 
+          ? Math.round(studentEnrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / studentEnrollments.length)
+          : 0;
+        
+        const studentTests = [];
+        tests.forEach(test => {
+          const result = test.results.find(r => r.student.toString() === student._id.toString());
+          if (result) {
+            studentTests.push((result.score / test.maxScore) * 100);
+          }
+        });
+        
+        const studentAvgScore = studentTests.length > 0 
+          ? Math.round(studentTests.reduce((sum, score) => sum + score, 0) / studentTests.length)
+          : 0;
+        
+        if (studentTests.length > 0 || studentEnrollments.length > 0) {
+          studentProgressData.push({
+            name: `${student.firstName} ${student.lastName}`,
+            progress: avgProgress,
+            averageScore: studentAvgScore,
+            testsCompleted: studentTests.length
+          });
+        }
+      }
+      
+      res.json({
+        totalCourses,
+        totalStudents,
+        availableTests,
+        averageScore,
+        overallProgressAverage,
+        studentProgressData,
+        userRole
+      });
     } else {
       // For students: show their personal average score using same calculation as test results page
       const tests = await Test.find({ isActive: true });
@@ -622,14 +674,14 @@ router.get('/user/stats', verifyToken, async (req, res) => {
       });
       
       averageScore = userScores.length > 0 ? Math.round(userScores.reduce((sum, score) => sum + score, 0) / userScores.length) : 0;
+      
+      res.json({
+        totalCourses,
+        availableTests,
+        averageScore,
+        userRole
+      });
     }
-    
-    res.json({
-      totalCourses,
-      availableTests,
-      averageScore,
-      userRole
-    });
   } catch (error) {
     console.error('Error fetching user stats:', error);
     res.status(500).json({ message: 'Failed to fetch user stats', error: error.message });
@@ -1222,8 +1274,8 @@ router.post('/admin/reject-user/:userId', requireAdmin, async (req, res) => {
 // Comprehensive Admin stats with real-time data
 router.get('/admin/stats', async (req, res) => {
   try {
-    // Basic counts
-    const totalCourses = await Course.countDocuments();
+    // Basic counts - only count active courses
+    const totalCourses = await Course.countDocuments({ isActive: true });
     const activeCourses = await Course.countDocuments({ isActive: true });
     const totalStudents = await User.countDocuments({ role: 'student' });
     const approvedStudents = await User.countDocuments({ role: 'student', isApproved: true });
@@ -1238,6 +1290,13 @@ router.get('/admin/stats', async (req, res) => {
     // Calculate unique students enrolled (distinct student IDs in enrollments)
     const uniqueStudentIds = new Set(enrollments.map(e => e.student._id.toString()));
     const uniqueStudentsEnrolled = uniqueStudentIds.size;
+    
+    // Calculate approved students who are enrolled in at least one course
+    const approvedEnrolledStudents = await User.countDocuments({
+      role: 'student',
+      isApproved: true,
+      _id: { $in: Array.from(uniqueStudentIds) }
+    });
     
     // Calculate average completion rate
     let totalProgress = 0;
@@ -1277,6 +1336,7 @@ router.get('/admin/stats', async (req, res) => {
       totalStudents: totalStudents,
       studentsEnrolled: totalEnrollments,
       uniqueStudentsEnrolled: uniqueStudentsEnrolled,
+      approvedEnrolledStudents: approvedEnrolledStudents,
       averageScore,
       averageCompletion,
       courseCompletionRate,

@@ -42,11 +42,22 @@ export default function TestResults() {
     enabled: !!user && isAdmin,
   });
 
+  // Fetch admin stats for total students enrolled metric
+  const { data: adminStats } = useQuery<{
+    studentsEnrolled: number;
+    totalStudents: number;
+    averageScore: number;
+    totalCourses: number;
+  }>({
+    queryKey: ["/api/mongo/admin/stats"],
+    enabled: !!user && isAdmin,
+  });
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 p-8">
+        <main className="ml-64 min-h-screen p-8">
           <div className="flex justify-between items-center mb-6">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-10 w-40" />
@@ -135,9 +146,9 @@ export default function TestResults() {
   })();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="ml-64 min-h-screen overflow-auto">
         {/* Header Section */}
         <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-8">
           <div className="text-center text-white">
@@ -191,7 +202,7 @@ export default function TestResults() {
                 <CardContent className="p-6 text-center">
                   <div className="relative">
                     <Trophy className="w-12 h-12 text-orange-400 mx-auto mb-4" />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full"></div>
                   </div>
                   <div className="text-3xl font-bold text-white mb-2 font-mono">{averageScore}%</div>
                   <p className="text-green-100 font-medium">Average Score</p>
@@ -205,12 +216,12 @@ export default function TestResults() {
             {/* Manual Refresh Indicator */}
             <div className="mt-8 flex items-center justify-center space-x-3">
               <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-                <Activity className="w-4 h-4 text-green-400" />
+                <Activity className="w-4 h-4 text-blue-400" />
                 <span className="text-white text-sm font-medium">Manual Refresh</span>
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
               </div>
               <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-                <RefreshCw className="w-4 h-4 text-blue-400" />
+                <RefreshCw className="w-4 h-4 text-gray-400" />
                 <span className="text-white text-sm font-medium">Click to refresh</span>
               </div>
             </div>
@@ -296,8 +307,8 @@ export default function TestResults() {
                         {selectedCourse === "all" ? "Overall Statistics" : `${selectedCourse} Course Analytics`}
                       </h3>
                       <div className="flex items-center space-x-2 bg-white/20 dark:bg-gray-800/20 rounded-full px-3 py-1">
-                        <Activity className="w-3 h-3 text-green-400" />
-                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">Updated Data</span>
+                        <Activity className="w-3 h-3 text-blue-400" />
+                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">Manual Refresh</span>
                       </div>
                     </div>
                     
@@ -309,13 +320,13 @@ export default function TestResults() {
                           </div>
                           <div>
                             <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider">
-                              {selectedCourse === "all" ? "Total Students" : "Students in Course"}
+                              Total Students Enrolled
                             </p>
                             <p className="text-lg font-bold text-blue-900 dark:text-blue-100 font-mono">
-                              {totalStudentsInCourse}
+                              {adminStats?.studentsEnrolled || 0}
                             </p>
                             <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">
-                              {selectedCourse === "all" ? "Across all courses" : "Enrolled & active"}
+                              All courses combined
                             </p>
                           </div>
                         </div>

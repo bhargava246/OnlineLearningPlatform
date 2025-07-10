@@ -84,8 +84,16 @@ export default function Dashboard() {
   };
 
   // Calculate enhanced dashboard metrics with real-time updates
-  const dashboardData = {
-    // Enrollment metrics
+  const dashboardData = user?.role === 'admin' ? {
+    // Admin-specific metrics
+    totalCourses: dashboardStats?.totalCourses || courses?.length || 0,
+    totalStudents: dashboardStats?.totalStudents || 0,
+    availableTests: dashboardStats?.availableTests || 0,
+    averageScore: dashboardStats?.averageScore || 0,
+    overallProgressAverage: dashboardStats?.overallProgressAverage || 0,
+    studentProgressData: dashboardStats?.studentProgressData || [],
+  } : {
+    // Student-specific metrics
     totalEnrolled: enrollments?.length || 0,
     completedCourses: enrollments?.filter(e => (e.progress || 0) >= 100)?.length || 0,
     inProgressCourses: enrollments?.filter(e => (e.progress || 0) > 0 && (e.progress || 0) < 100)?.length || 0,
@@ -111,9 +119,9 @@ export default function Dashboard() {
 
   if (statsLoading || enrollmentsLoading || coursesLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 p-8">
+        <main className="ml-64 min-h-screen p-8">
           <div className="rounded-3xl border border-white/20 shadow-2xl overflow-hidden bg-gradient-to-r from-blue-50/50 via-indigo-50/50 to-purple-50/50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 mb-8">
             <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
             <div className="p-8">
@@ -139,11 +147,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="ml-64 min-h-screen overflow-auto">
         <div className="p-8 space-y-8">
           {/* Enhanced Welcome Section */}
           <div className="rounded-3xl border border-white/20 shadow-2xl overflow-hidden bg-gradient-to-r from-blue-50/50 via-indigo-50/50 to-purple-50/50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20">
@@ -165,11 +173,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   
-                  {/* Live Data Indicator & Actions */}
+                  {/* Manual Refresh Indicator & Actions */}
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2 bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-xl border border-green-200 dark:border-green-800">
-                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                      <span className="text-green-800 dark:text-green-200 text-sm font-medium">Live Data</span>
+                    <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                      <span className="text-blue-800 dark:text-blue-200 text-sm font-medium">Manual Refresh</span>
                     </div>
                     <Button 
                       variant="outline" 
@@ -193,15 +201,95 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Real-time Dashboard Metrics */}
+          {/* Manual Dashboard Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Enrolled Courses */}
-            <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow duration-300 relative">
-              <CardContent className="p-6">
-                <div className="absolute top-2 right-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                </div>
-                <div className="flex items-center justify-between">
+            {user?.role === 'admin' ? (
+              <>
+                {/* Total Courses */}
+                <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow duration-300 relative">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">{dashboardData.totalCourses}</p>
+                        <div className="flex items-center space-x-2">
+                          <BookOpen className="w-4 h-4 text-blue-500" />
+                          <span className="text-sm text-gray-500">Platform-wide</span>
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
+                        <BookOpen className="w-6 h-6 text-blue-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Total Students */}
+                <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow duration-300 relative">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">{dashboardData.totalStudents}</p>
+                        <div className="flex items-center space-x-2">
+                          <Users className="w-4 h-4 text-green-500" />
+                          <span className="text-sm text-gray-500">Active learners</span>
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-xl flex items-center justify-center">
+                        <Users className="w-6 h-6 text-green-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Overall Progress Average */}
+                <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow duration-300 relative">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Progress Average</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">{dashboardData.overallProgressAverage}%</p>
+                        <div className="flex items-center space-x-2">
+                          <Target className="w-4 h-4 text-purple-500" />
+                          <span className="text-sm text-gray-500">All students</span>
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-xl flex items-center justify-center">
+                        <Target className="w-6 h-6 text-purple-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Average Test Score */}
+                <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow duration-300 relative">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Average Test Score</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">{dashboardData.averageScore}%</p>
+                        <div className="flex items-center space-x-2">
+                          <Award className="w-4 h-4 text-orange-500" />
+                          <span className="text-sm text-gray-500">Platform-wide</span>
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-xl flex items-center justify-center">
+                        <Award className="w-6 h-6 text-orange-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <>
+                {/* Enrolled Courses */}
+                <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow duration-300 relative">
+                  <CardContent className="p-6">
+                    <div className="absolute top-2 right-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full " />
+                    </div>
+                    <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Enrolled Courses</p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -223,7 +311,7 @@ export default function Dashboard() {
             <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow duration-300 relative">
               <CardContent className="p-6">
                 <div className="absolute top-2 right-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full " />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
@@ -247,7 +335,7 @@ export default function Dashboard() {
             <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow duration-300 relative">
               <CardContent className="p-6">
                 <div className="absolute top-2 right-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full " />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
@@ -271,7 +359,7 @@ export default function Dashboard() {
             <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow duration-300 relative">
               <CardContent className="p-6">
                 <div className="absolute top-2 right-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full " />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
@@ -281,7 +369,7 @@ export default function Dashboard() {
                     </p>
                     <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center mt-1">
                       <Activity className="w-3 h-3 mr-1" />
-                      Real-time tracking
+                      Manual tracking
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
@@ -290,16 +378,120 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+              </>
+            )}
           </div>
 
           {/* Main Dashboard Content */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Course Progress */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Course Progress Overview */}
-              <Card className="hover:shadow-lg transition-shadow duration-300">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
+              {user?.role === 'admin' ? (
+                <>
+                  {/* Admin: Student Progress Overview */}
+                  <Card className="hover:shadow-lg transition-shadow duration-300">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+                          <BarChart3 className="w-5 h-5 text-blue-600" />
+                          <span>Student Progress Overview</span>
+                        </CardTitle>
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 flex items-center space-x-1">
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Manual
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        {dashboardData.studentProgressData && dashboardData.studentProgressData.length > 0 ? (
+                          dashboardData.studentProgressData.slice(0, 8).map((student, index) => (
+                            <div key={index} className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                    <Users className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-900 dark:text-white">
+                                      {student.name}
+                                    </p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      {student.testsCompleted} tests completed
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-gray-900 dark:text-white">
+                                    {student.progress}%
+                                  </p>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                                    Course Progress
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">Course Progress</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">{student.progress}%</span>
+                              </div>
+                              <Progress value={student.progress} className="h-2 mb-2" />
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">Test Average</span>
+                                <span className="text-sm font-medium text-purple-600 dark:text-purple-400">{student.averageScore}%</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-12 text-gray-500">
+                            <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            <p className="text-lg font-medium">No student progress data</p>
+                            <p className="text-sm">Students will appear here once they start taking courses</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Admin: Test Results Summary */}
+                  <Card className="hover:shadow-lg transition-shadow duration-300">
+                    <CardHeader>
+                      <CardTitle className="text-xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+                        <Award className="w-5 h-5 text-purple-600" />
+                        <span>Platform Test Performance</span>
+                      </CardTitle>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Overall student test results across all courses</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-xl text-center">
+                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                          <Award className="w-8 h-8 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                          {dashboardData.averageScore}%
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                          Average test score across all students
+                        </p>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="bg-white/50 dark:bg-black/20 p-3 rounded-lg">
+                            <p className="font-medium text-gray-900 dark:text-white">{dashboardData.totalStudents}</p>
+                            <p className="text-gray-600 dark:text-gray-400">Total Students</p>
+                          </div>
+                          <div className="bg-white/50 dark:bg-black/20 p-3 rounded-lg">
+                            <p className="font-medium text-gray-900 dark:text-white">{dashboardData.availableTests}</p>
+                            <p className="text-gray-600 dark:text-gray-400">Available Tests</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              ) : (
+                <>
+                  {/* Student: Course Progress Overview */}
+                  <Card className="hover:shadow-lg transition-shadow duration-300">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
                         <BookOpen className="w-5 h-5 text-blue-600" />
@@ -308,8 +500,8 @@ export default function Dashboard() {
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Track your learning journey</p>
                     </div>
                     <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-                      <Zap className="w-3 h-3 mr-1" />
-                      Live
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Manual
                     </Badge>
                   </div>
                 </CardHeader>
@@ -427,6 +619,8 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
+                </>
+              )}
             </div>
 
             {/* Right Column - Quick Actions & Info */}
@@ -458,25 +652,50 @@ export default function Dashboard() {
               {/* Statistics Summary */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold text-gray-900 dark:text-white">Learning Stats</CardTitle>
+                  <CardTitle className="text-lg font-bold text-gray-900 dark:text-white">
+                    {user?.role === 'admin' ? 'Platform Stats' : 'Learning Stats'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Total Courses</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{courses?.length || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Enrolled</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{dashboardData.totalEnrolled}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Completed</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{dashboardData.completedCourses}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Average Score</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{dashboardData.averageScore}%</span>
-                  </div>
+                  {user?.role === 'admin' ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Total Courses</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{dashboardData.totalCourses}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Total Students</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{dashboardData.totalStudents}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Progress Average</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{dashboardData.overallProgressAverage}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Test Average</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{dashboardData.averageScore}%</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Total Courses</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{courses?.length || 0}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Enrolled</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{dashboardData.totalEnrolled}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Completed</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{dashboardData.completedCourses}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Average Score</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{dashboardData.averageScore}%</span>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -484,25 +703,30 @@ export default function Dashboard() {
               <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200 dark:border-yellow-800">
                 <CardContent className="p-6 text-center">
                   <Star className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-2">Keep Learning!</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-2">
+                    {user?.role === 'admin' ? 'Platform Excellence!' : 'Keep Learning!'}
+                  </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    You're making great progress. Complete more courses to unlock achievements!
+                    {user?.role === 'admin' 
+                      ? 'Your platform is thriving! Monitor student progress and continue growing the learning community.'
+                      : "You're making great progress. Complete more courses to unlock achievements!"
+                    }
                   </p>
                 </CardContent>
               </Card>
             </div>
           </div>
 
-          {/* Real-time Update Status */}
+          {/* Manual Refresh Status */}
           <div className="mt-8 flex items-center justify-center space-x-4">
             <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 dark:border-gray-700">
-              <Activity className="w-4 h-4 text-green-500 animate-pulse" />
-              <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">Live Dashboard</span>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+              <Activity className="w-4 h-4 text-blue-500" />
+              <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">Manual Refresh</span>
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             </div>
             <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 dark:border-gray-700">
-              <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-              <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">Auto-refresh: 3s</span>
+              <RefreshCw className="w-4 h-4 text-gray-500" />
+              <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">Click to refresh</span>
             </div>
           </div>
         </div>
