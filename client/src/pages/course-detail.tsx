@@ -147,9 +147,9 @@ export default function CourseDetail() {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 p-8">
+        <main className="ml-64 p-4 md:p-8">
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Course not found</h2>
             <p className="text-gray-500">The course you're looking for doesn't exist.</p>

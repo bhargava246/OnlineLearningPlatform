@@ -134,9 +134,9 @@ export default function VideoPlayer() {
   const videoId = getYouTubeVideoId(module.youtubeUrl);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-1 p-8">
+      <main className="ml-64 p-4 md:p-8 max-w-full overflow-x-hidden">
         {/* Navigation */}
         <div className="mb-6">
           <Link href={`/courses/${params.courseId}`}>
@@ -147,17 +147,17 @@ export default function VideoPlayer() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           {/* Video Player */}
           <div className="lg:col-span-2">
             <Card>
               <CardContent className="p-0">
                 {videoId ? (
-                  <div className="aspect-video">
+                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
                     <iframe
                       src={`https://www.youtube.com/embed/${videoId}`}
                       title={module.title}
-                      className="w-full h-full rounded-t-lg"
+                      className="absolute top-0 left-0 w-full h-full border-0"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen

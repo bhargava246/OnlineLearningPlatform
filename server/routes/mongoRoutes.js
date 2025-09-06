@@ -1288,7 +1288,9 @@ router.get('/admin/stats', async (req, res) => {
     const totalEnrollments = enrollments.length;
     
     // Calculate unique students enrolled (distinct student IDs in enrollments)
-    const uniqueStudentIds = new Set(enrollments.map(e => e.student._id.toString()));
+    // Filter out enrollments with null students
+    const validEnrollments = enrollments.filter(e => e.student && e.student._id);
+    const uniqueStudentIds = new Set(validEnrollments.map(e => e.student._id.toString()));
     const uniqueStudentsEnrolled = uniqueStudentIds.size;
     
     // Calculate approved students who are enrolled in at least one course
@@ -1492,14 +1494,19 @@ router.post('/courses/:courseId/modules/:moduleId/complete', verifyToken, async 
       return res.status(404).json({ message: 'Module not found' });
     }
 
-    // Check if user is enrolled in the course
-    const enrollment = await Enrollment.findOne({
-      student: userId,
-      course: courseId
-    });
+    // Check if user is enrolled in the course (allow admins to bypass this check)
+    let enrollment = null;
+    const userRole = req.user.role;
     
-    if (!enrollment) {
-      return res.status(403).json({ message: 'Not enrolled in this course' });
+    if (userRole !== 'admin') {
+      enrollment = await Enrollment.findOne({
+        student: userId,
+        course: courseId
+      });
+      
+      if (!enrollment) {
+        return res.status(403).json({ message: 'Not enrolled in this course' });
+      }
     }
 
     // Check if module is already completed by this user
@@ -1517,22 +1524,24 @@ router.post('/courses/:courseId/modules/:moduleId/complete', verifyToken, async 
       completedAt: new Date()
     });
 
-    // Add module to enrollment's completed modules if not already there
-    if (!enrollment.completedModules.includes(moduleId)) {
-      enrollment.completedModules.push(moduleId);
+    // Add module to enrollment's completed modules if not already there (only for students)
+    if (enrollment) {
+      if (!enrollment.completedModules.includes(moduleId)) {
+        enrollment.completedModules.push(moduleId);
+      }
+
+      // Update enrollment progress
+      const totalModules = course.modules.length;
+      const completedModules = enrollment.completedModules.length;
+      enrollment.progress = Math.round((completedModules / totalModules) * 100);
+      await enrollment.save();
     }
 
-    // Update enrollment progress
-    const totalModules = course.modules.length;
-    const completedModules = enrollment.completedModules.length;
-    enrollment.progress = Math.round((completedModules / totalModules) * 100);
-
     await course.save();
-    await enrollment.save();
 
     res.json({ 
       message: 'Module marked as completed',
-      progress: enrollment.progress,
+      progress: enrollment ? enrollment.progress : 0,
       isCompleted: true
     });
 
@@ -1558,14 +1567,19 @@ router.delete('/courses/:courseId/modules/:moduleId/complete', verifyToken, asyn
       return res.status(404).json({ message: 'Module not found' });
     }
 
-    // Check if user is enrolled in the course
-    const enrollment = await Enrollment.findOne({
-      student: userId,
-      course: courseId
-    });
+    // Check if user is enrolled in the course (allow admins to bypass this check)
+    let enrollment = null;
+    const userRole = req.user.role;
     
-    if (!enrollment) {
-      return res.status(403).json({ message: 'Not enrolled in this course' });
+    if (userRole !== 'admin') {
+      enrollment = await Enrollment.findOne({
+        student: userId,
+        course: courseId
+      });
+      
+      if (!enrollment) {
+        return res.status(403).json({ message: 'Not enrolled in this course' });
+      }
     }
 
     // Remove completion record
@@ -1573,22 +1587,24 @@ router.delete('/courses/:courseId/modules/:moduleId/complete', verifyToken, asyn
       completion.userId.toString() !== userId
     );
 
-    // Remove module from enrollment's completed modules
-    enrollment.completedModules = enrollment.completedModules.filter(
-      id => id.toString() !== moduleId
-    );
+    // Remove module from enrollment's completed modules (only for students)
+    if (enrollment) {
+      enrollment.completedModules = enrollment.completedModules.filter(
+        id => id.toString() !== moduleId
+      );
 
-    // Update enrollment progress
-    const totalModules = course.modules.length;
-    const completedModules = enrollment.completedModules.length;
-    enrollment.progress = Math.round((completedModules / totalModules) * 100);
+      // Update enrollment progress
+      const totalModules = course.modules.length;
+      const completedModules = enrollment.completedModules.length;
+      enrollment.progress = Math.round((completedModules / totalModules) * 100);
+      await enrollment.save();
+    }
 
     await course.save();
-    await enrollment.save();
 
     res.json({ 
       message: 'Module completion removed',
-      progress: enrollment.progress,
+      progress: enrollment ? enrollment.progress : 0,
       isCompleted: false
     });
 

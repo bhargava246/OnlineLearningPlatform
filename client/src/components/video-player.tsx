@@ -62,7 +62,7 @@ export default function VideoPlayer({ title, videoUrl }: VideoPlayerProps) {
               <h3 className="text-lg font-medium text-gray-900 mb-1">{title}</h3>
               <p className="text-sm text-gray-500 flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                Duration: {duration}
+                Video Content
               </p>
             </div>
             <Button 
