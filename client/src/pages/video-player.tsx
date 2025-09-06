@@ -134,9 +134,9 @@ export default function VideoPlayer() {
   const videoId = getYouTubeVideoId(module.youtubeUrl);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-1 p-4 md:p-8 max-w-full overflow-x-hidden">
+      <main className="ml-64 p-4 md:p-8 max-w-full overflow-x-hidden">
         {/* Navigation */}
         <div className="mb-6">
           <Link href={`/courses/${params.courseId}`}>
