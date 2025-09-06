@@ -5,13 +5,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { formatDate, getGradeColor } from "@/lib/utils";
 import Sidebar from "@/components/sidebar";
-import { BookOpen, Calendar, Award, User, Trophy, TrendingUp, Target, CheckCircle, RefreshCw, Activity } from "lucide-react";
+import { BookOpen, Calendar, Award, User, Trophy, TrendingUp, Target, CheckCircle, RefreshCw, Activity, X, Mail, Clock, GraduationCap } from "lucide-react";
 
 export default function TestResults() {
   const { user, isAdmin } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState("all");
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const queryClient = useQueryClient();
   
   // Get test results based on user role (no automatic refresh)
@@ -377,11 +381,18 @@ export default function TestResults() {
         {isAdmin ? (
           // Admin view: Show filtered students and their results based on selected course
           filteredTestResults?.map((studentData: any, index: number) => (
-            <div key={studentData.student._id} className={`rounded-3xl border border-white/20 shadow-2xl overflow-hidden ${
-              index % 2 === 0 
-                ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/10' 
-                : 'bg-gradient-to-r from-blue-500/10 to-indigo-500/10'
-            }`}>
+            <div 
+              key={studentData.student._id} 
+              className={`rounded-3xl border border-white/20 shadow-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-all duration-300 ${
+                index % 2 === 0 
+                  ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/10' 
+                  : 'bg-gradient-to-r from-blue-500/10 to-indigo-500/10'
+              }`}
+              onClick={() => {
+                setSelectedStudent(studentData);
+                setIsDetailModalOpen(true);
+              }}
+            >
               <div className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm">
                 <CardHeader className="pb-4">
                   <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
@@ -654,6 +665,168 @@ export default function TestResults() {
       )}
         </div>
       </main>
+
+      {/* Student Detail Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl font-bold">Student Test Results</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDetailModalOpen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+
+          {selectedStudent && (
+            <div className="space-y-6">
+              {/* Student Info Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {selectedStudent.student.firstName} {selectedStudent.student.lastName}
+                    </h3>
+                    <div className="flex items-center space-x-4 mt-2 text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center space-x-2">
+                        <Mail className="h-4 w-4" />
+                        <span>{selectedStudent.student.email}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <GraduationCap className="h-4 w-4" />
+                        <span className="capitalize">{selectedStudent.student.role}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                  <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedStudent.testResults?.length || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Total Tests</div>
+                  </div>
+                  <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {selectedStudent.testResults?.filter((t: any) => t.result).length || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Completed</div>
+                  </div>
+                  <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {selectedStudent.testResults?.length > 0 
+                        ? Math.round((selectedStudent.testResults.filter((t: any) => t.result).length / selectedStudent.testResults.length) * 100)
+                        : 0}%
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Completion Rate</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Test Results Details */}
+              <div className="space-y-4">
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  <span>Detailed Test Performance</span>
+                </h4>
+
+                {selectedStudent.testResults?.length > 0 ? (
+                  selectedStudent.testResults.map((testResult: any, index: number) => (
+                    <div
+                      key={testResult.testId}
+                      className={`p-6 rounded-xl border-2 ${
+                        testResult.result
+                          ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+                          : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20'
+                      }`}
+                    >
+                      <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-3">
+                            <div className={`p-2 rounded-lg ${
+                              testResult.result ? 'bg-green-500' : 'bg-gray-400'
+                            }`}>
+                              <BookOpen className="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                              <h5 className="font-bold text-lg text-gray-900 dark:text-white">
+                                {testResult.testTitle}
+                              </h5>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {testResult.course?.title} • {testResult.course?.category}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                          {testResult.result ? (
+                            <>
+                              <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg border shadow-sm">
+                                <div className="text-center">
+                                  <div className="text-xl font-bold text-gray-900 dark:text-white">
+                                    {testResult.result.score} / {testResult.maxScore}
+                                  </div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {Math.round((testResult.result.score / testResult.maxScore) * 100)}% Score
+                                  </div>
+                                </div>
+                              </div>
+
+                              <Badge className={`${getGradeColor(testResult.result.grade)} px-3 py-1 text-sm font-bold`}>
+                                {testResult.result.grade}
+                              </Badge>
+
+                              <div className="bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+                                  <Calendar className="h-4 w-4" />
+                                  <span className="text-sm">
+                                    {formatDate(testResult.result.completedAt)}
+                                  </span>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <Badge variant="outline" className="px-3 py-1">
+                              Not Completed
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Answer Details (if available) */}
+                      {testResult.result?.answers && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <h6 className="font-semibold text-gray-900 dark:text-white mb-2">Answer Details:</h6>
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-sm">
+                            <pre className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                              {JSON.stringify(testResult.result.answers, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No test results available for this student.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
