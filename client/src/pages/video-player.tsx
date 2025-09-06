@@ -136,7 +136,7 @@ export default function VideoPlayer() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-4 md:p-8 max-w-full overflow-x-hidden">
         {/* Navigation */}
         <div className="mb-6">
           <Link href={`/courses/${params.courseId}`}>
@@ -147,7 +147,7 @@ export default function VideoPlayer() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           {/* Video Player */}
           <div className="lg:col-span-2">
             <Card>
