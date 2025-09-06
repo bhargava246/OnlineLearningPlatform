@@ -153,11 +153,11 @@ export default function VideoPlayer() {
             <Card>
               <CardContent className="p-0">
                 {videoId ? (
-                  <div className="aspect-video">
+                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
                     <iframe
                       src={`https://www.youtube.com/embed/${videoId}`}
                       title={module.title}
-                      className="w-full h-full rounded-t-lg"
+                      className="absolute top-0 left-0 w-full h-full border-0"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
