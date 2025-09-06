@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, getGradeColor } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/sidebar";
-import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen, BarChart3, Target, TrendingUp, GraduationCap, Shield, UserCheck, Activity, Clock, Calendar, PieChart, LineChart, Zap, RefreshCw } from "lucide-react";
+import { Plus, Youtube, FileText, Edit, Trash2, Award, Users, BookOpen, BarChart3, Target, TrendingUp, GraduationCap, Shield, UserCheck, Activity, Clock, Calendar, PieChart, LineChart, Zap } from "lucide-react";
 import type { User, Course, TestResult } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -433,44 +433,6 @@ export default function Admin() {
                               </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* Enhanced Controls Section */}
-                        <div className="flex flex-col space-y-4">
-                          <div className="flex items-center space-x-4">
-                            <div className="relative group/status">
-                              <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl blur opacity-20 group-hover/status:opacity-40 transition-opacity duration-300"></div>
-                              <div className="relative flex items-center space-x-3 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 px-6 py-3 rounded-xl border border-green-200/50 dark:border-green-800/50 backdrop-blur-sm">
-                                <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-blue-500 rounded-full animate-pulse shadow-lg"></div>
-                                <span className="text-green-800 dark:text-green-200 font-bold">Manual Refresh Mode</span>
-                                <div className="px-2 py-1 bg-white/50 dark:bg-gray-800/50 rounded-md text-xs font-medium text-gray-600 dark:text-gray-400">
-                                  Click to update
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <Button 
-                            variant="outline" 
-                            size="lg"
-                            onClick={() => {
-                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/stats"] });
-                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/student-results"] });
-                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/users"] });
-                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/courses"] });
-                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
-                              queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/pending-approvals"] });
-                              toast({
-                                title: "Analytics Refreshed",
-                                description: "All platform data has been updated successfully",
-                              });
-                            }}
-                            className="relative group/refresh bg-gradient-to-r from-white/90 to-blue-50/90 dark:from-gray-800/90 dark:to-blue-900/30 border-gray-200/50 dark:border-gray-700/50 hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/30 backdrop-blur-sm font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
-                          >
-                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-0 group-hover/refresh:opacity-20 transition-opacity duration-300"></div>
-                            <RefreshCw className="w-5 h-5 mr-3 group-hover/refresh:rotate-180 transition-transform duration-500" />
-                            Refresh Analytics
-                          </Button>
                         </div>
                       </div>
                     </div>

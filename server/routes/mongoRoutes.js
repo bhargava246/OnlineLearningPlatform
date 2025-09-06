@@ -1288,7 +1288,9 @@ router.get('/admin/stats', async (req, res) => {
     const totalEnrollments = enrollments.length;
     
     // Calculate unique students enrolled (distinct student IDs in enrollments)
-    const uniqueStudentIds = new Set(enrollments.map(e => e.student._id.toString()));
+    // Filter out enrollments with null students
+    const validEnrollments = enrollments.filter(e => e.student && e.student._id);
+    const uniqueStudentIds = new Set(validEnrollments.map(e => e.student._id.toString()));
     const uniqueStudentsEnrolled = uniqueStudentIds.size;
     
     // Calculate approved students who are enrolled in at least one course

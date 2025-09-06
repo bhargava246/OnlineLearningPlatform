@@ -231,10 +231,6 @@ function TestGradingCard({ test, onGradeDialog, getGradeColor }: TestGradingCard
                       <Activity className="w-4 h-4 text-green-600" />
                       <span className="text-green-800 dark:text-green-200 text-sm font-medium">Live Data</span>
                     </div>
-                    <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 px-3 py-2 rounded-lg border border-orange-200/50 dark:border-orange-800/50">
-                      <div className="w-3 h-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
-                      <span className="text-orange-800 dark:text-orange-200 text-sm font-medium">Auto-refresh</span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -369,23 +365,12 @@ export default function StudentGrades() {
 
   const { data: tests, isLoading: testsLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/tests"],
-    refetchInterval: 3000,
   });
 
   const { data: studentResults, isLoading: resultsLoading } = useQuery<any[]>({
     queryKey: ["/api/mongo/admin/student-results"],
-    refetchInterval: 3000,
   });
 
-  // Auto-refresh data every 3 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mongo/tests"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mongo/admin/student-results"] });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [queryClient]);
 
   const openGradeDialog = (student: any, test: any, existingResult?: any) => {
     setSelectedStudent(student);
